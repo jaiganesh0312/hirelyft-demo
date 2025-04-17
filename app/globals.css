@@ -1,0 +1,15 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* Other global styles */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Make sure elements with focus are visible */
+*:focus-visible {
+  outline: 2px solid #0066cc;
+  outline-offset: 2px;
+}
