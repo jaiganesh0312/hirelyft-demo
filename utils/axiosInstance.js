@@ -1,6 +1,4 @@
 import axios from 'axios';
-import {config} from 'dotenv';
-config()
 
 // Replace with your actual backend API URL
 const API_BASE_URL = 'https://73f1-122-172-86-115.ngrok-free.app';
