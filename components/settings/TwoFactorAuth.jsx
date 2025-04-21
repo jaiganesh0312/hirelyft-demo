@@ -38,7 +38,7 @@ const totpSchema = z.object({
 });
 
 export default function TwoFactorAuth() {
-  const { user, checkAuthLoading, isAuthenticated, refreshUserData } =
+  const { user, checkAuthLoading, isAuthenticated } =
     useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -108,16 +108,12 @@ export default function TwoFactorAuth() {
       setSetupStage(false);
       setQrCodeUrl(null);
       setSetupSecret(null);
-      const success = await refreshUserData();
-      if (!success) {
-        console.log("User data refresh failed, but 2FA status was updated successfully");
-        // Optionally update just the 2FA status in the current user object
-        if (user) {
-          const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        }
+      if (user) {
+        const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       }
+
     } catch (err) {
       console.error("Enable 2FA failed:", err);
       setError(
@@ -137,15 +133,11 @@ export default function TwoFactorAuth() {
       const response = await disable2FA({token: data.token});
       setSuccessMessage(response.data.message || "2FA disabled successfully!");
       setIs2FAEnabledState(false);
-      const success = await refreshUserData();
-      if (!success) {
-        console.log("User data refresh failed, but 2FA status was updated successfully");
-        // Optionally update just the 2FA status in the current user object
-        if (user) {
-          const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
-          setUser(updatedUser);
-          localStorage.setItem('user', JSON.stringify(updatedUser));
-        }
+
+      if (user) {
+        const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
+        setUser(updatedUser);
+        localStorage.setItem('user', JSON.stringify(updatedUser));
       }
     } catch (err) {
       console.error("Disable 2FA failed:", err);
@@ -360,7 +352,7 @@ export default function TwoFactorAuth() {
                         input: "bg-content2 dark:bg-content1",
                       }}
                     />
-                    
+
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
