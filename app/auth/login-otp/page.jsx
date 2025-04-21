@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, InputOTP, OTPInput } from "@heroui/react"; // Assuming InputOTP/OTPInput exists or use regular Input
+import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, InputOtp } from "@heroui/react"; // Assuming InputOTP/OTPInput exists or use regular Input
 import { Icon } from '@iconify/react';
 import { requestOtpLogin, verifyOtpLogin } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -163,20 +163,16 @@ export default function LoginOtpPage() {
                 {/* Use NextUI InputOTP if available, otherwise regular input */}
                  {/* Check NextUI docs for correct OTP component usage */}
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Enter the 6-digit code:</p>
-                <Input
+                <InputOtp
                     {...otpForm.register('otp')}
-                    placeholder="------"
                     variant="bordered"
                     isInvalid={!!otpForm.formState.errors.otp}
                     errorMessage={otpForm.formState.errors.otp?.message}
-                    maxLength={6}
-                    inputMode="numeric"
-                    className="max-w-[150px] text-center"
-                    classNames={{
-                        input: "text-center text-2xl tracking-[.5em]"
-                    }}
+                    length={6}
+                    className=""
                     isRequired
                     isDisabled={loading}
+                    autoFocus
                  />
 
               <Button

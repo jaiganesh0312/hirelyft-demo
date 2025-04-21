@@ -38,8 +38,7 @@ const totpSchema = z.object({
 });
 
 export default function TwoFactorAuth() {
-  const { user, checkAuthLoading, isAuthenticated, setUser } =
-    useAuth();
+  const { user, checkAuthLoading, isAuthenticated, setUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
@@ -63,11 +62,10 @@ export default function TwoFactorAuth() {
     }
   }, [user]);
 
-
   const {
     register,
     handleSubmit,
-    formState: { errors,  },
+    formState: { errors },
     reset,
     control,
   } = useForm({
@@ -103,53 +101,26 @@ export default function TwoFactorAuth() {
     setLoading(true);
     try {
       const response = await enable2FA({ token: data.token });
-      console.log("Enable response");
       setSetupStage(false);
-      console.log("Enable setupstage");
-
       setQrCodeUrl(null);
-      console.log("Enable qrcode");
-
       setSetupSecret(null);
-      console.log("Enable secret");
-
       if (user) {
-        console.log("Enable if condition");
-
-        const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
-        console.log("Enable upatedUser");
-
+        const updatedUser = { ...user, is2FAEnabled: true }; 
         setUser(updatedUser);
-        console.log("Enable setUser");
-
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log("Enable setItem to local storage");
-
-
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       }
-      console.log("Enable finished if condition");
-
       setIs2FAEnabledState(true);
-      console.log("Enable 2fa enabled state");
-
       setSuccessMessage(response.data.message || "2FA enabled successfully!");
-      console.log("Enable set success message");
-
 
     } catch (err) {
-      console.log("Enable error", err);
-      console.log("Enable error", JSON.stringify(err));
       console.error("Enable 2FA failed:", err);
       setError(
         err.response?.data?.message ||
           "Failed to enable 2FA. The code might be incorrect or expired."
       );
-      console.log("Enable setError");
     } finally {
       setLoading(false);
     }
-    console.log("Enable done");
-
   };
 
   const handleDisable2FA = async (data) => {
@@ -157,37 +128,20 @@ export default function TwoFactorAuth() {
     setSuccessMessage(null);
     setLoading(true);
     try {
-      const response = await disable2FA({token: data.token});
-      console.log("disable response");
-
+      const response = await disable2FA({ token: data.token });
       if (user) {
-        console.log("disable if condition");
-
-        const updatedUser = {...user, is2FAEnabled: false}; 
-        console.log("disable updatedUser");
-
+        const updatedUser = { ...user, is2FAEnabled: false };
         setUser(updatedUser);
-        console.log("disable setUser");
-
-
-        localStorage.setItem('user', JSON.stringify(updatedUser));
-        console.log("disable set local storage");
-
+        localStorage.setItem("user", JSON.stringify(updatedUser));
       }
-      console.log("disable finshed if condition");
-
       setSuccessMessage(response.data.message || "2FA disabled successfully!");
-      console.log("disable set success message");
-
       setIs2FAEnabledState(false);
-      console.log("disable set2faenable");
 
     } catch (err) {
-      console.log("disable response:", err);
       console.error("Disable 2FA failed:", err);
       setError(
         err.response?.data?.message ||
-        "Failed to disable 2FA. Please try again."
+          "Failed to disable 2FA. Please try again."
       );
     } finally {
       setLoading(false);
@@ -269,7 +223,7 @@ export default function TwoFactorAuth() {
                 className="text-xl text-warning-600"
               />
               <p className="text-sm text-warning-700 dark:text-warning-400">
-                With 2FA enabled, you'll need your phone or other device to sign
+                With 2FA enabled, you&rsquo;ll need your phone or other device to sign
                 in. Make sure to keep backup codes in a safe place.
               </p>
             </CardBody>
@@ -396,7 +350,6 @@ export default function TwoFactorAuth() {
                         input: "bg-content2 dark:bg-content1",
                       }}
                     />
-
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -450,7 +403,7 @@ export default function TwoFactorAuth() {
                   </div>
                   <p className="text-sm text-default-600 dark:text-default-400 mt-1">
                     Your account is protected with two-factor authentication.
-                    You'll need to enter a verification code when signing in.
+                    You&rsquo;ll need to enter a verification code when signing in.
                   </p>
                 </div>
               </div>
@@ -489,7 +442,6 @@ export default function TwoFactorAuth() {
             </CardBody>
           </Card>
 
-          {/* Confirmation Modal for Disabling 2FA */}
           <Modal
             isOpen={isDisableModalOpen}
             onClose={onDisableModalClose}
@@ -534,8 +486,9 @@ export default function TwoFactorAuth() {
                             isDisabled={loading}
                             classNames={{
                               base: "max-w-full",
-                              input: "bg-content2 dark:bg-content1",
                             }}
+                            autoFocus
+                            
                           />
                         </div>
                       </CardBody>

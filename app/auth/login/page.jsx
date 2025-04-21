@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, Divider, Checkbox } from "@heroui/react";
+import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, Divider, Checkbox, InputOtp } from "@heroui/react";
 import { Icon } from '@iconify/react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
@@ -112,18 +112,20 @@ export default function LoginPage() {
             />
 
             {requires2FA && (
-              <Input
+              <>
+              <p className="text-sm text-center text-gray-600 dark:text-gray-400 mb-1 mt-2">Enter the 6 digit verification code</p>
+              <InputOtp
                 {...register('totpToken')}
-                label="2FA Code"
                 placeholder="Enter your 6-digit code"
                 variant="bordered"
                 isInvalid={!!errors.totpToken}
                 errorMessage={errors.totpToken?.message}
-                startContent={<Icon icon="mdi:shield-key-outline" className="text-xl text-default-400 pointer-events-none flex-shrink-0" />}
+                className='mx-auto'
                 isRequired
                 isDisabled={loading}
-                maxLength={6}
+                length={6}
               />
+              </>
             )}
 
             <div className="flex py-1 px-1 justify-between">

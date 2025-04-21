@@ -88,7 +88,6 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await getProfile();
       const { user: userData } = response.data;
-      console.log("User Data:", userData);
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
       return true; // Indicate success

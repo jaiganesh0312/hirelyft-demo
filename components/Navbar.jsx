@@ -31,8 +31,8 @@ export default function Navbar() {
 
   const menuItemsPublic = [
     { label: "About us", href: "/about" },
-    { label: "Pricing", href: "/pricing" },
-    { label: "Login", href: "/auth/login" },
+    { label: "Pricing", href: "#" },
+    { label: "Sign Up", href: "/auth/register" },
   ];
 
   const menuItemsAuthenticated = [
@@ -73,7 +73,7 @@ export default function Navbar() {
               </Link>
             </NavbarItem>
              <NavbarItem>
-              <Link color="foreground" href="/pricing" aria-current={pathname === '/pricing' ? "page" : undefined}>
+              <Link color="foreground" href="/pricing" aria-current={pathname === '/pricing' ? "page" : undefined} isDisabled>
                 Pricing
               </Link>
             </NavbarItem>
@@ -154,10 +154,10 @@ export default function Navbar() {
 
         {!isAuthenticated ? (
           <>
-            <NavbarItem className="hidden lg:flex">
+            <NavbarItem >
               <Button as={Link} href="/auth/login" color='primary' variant='ghost' startContent={<Icon icon='mdi:login' />} >Log In</Button>
             </NavbarItem>
-            <NavbarItem>
+            <NavbarItem className="hidden md:flex">
               <Button as={Link} color="primary" href="/auth/register" variant="flat">
                 Sign Up
               </Button>
@@ -201,7 +201,7 @@ export default function Navbar() {
       <NavbarMenu className='bg-white' >
         {(!isAuthenticated ? menuItemsPublic : menuItemsAuthenticated).map((item, index) => (
           <NavbarMenuItem key={`${item.label}-${index}`}>
-             {item.label === "Login" ? (
+             {item.label === "Sign Up" ? (
                  <Link
                     color="primary"
                     className='w-full'
@@ -217,7 +217,7 @@ export default function Navbar() {
                     href={item.href}
                     size="lg"
                     aria-current={pathname === item.href ? "page" : undefined}
-                    isDisabled
+                    isDisabled={item.href !== '/about'}
                     >
                     {item.label}
                 </Link>
