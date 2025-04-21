@@ -49,8 +49,6 @@ export default function TwoFactorAuth() {
   const [is2FAEnabledState, setIs2FAEnabledState] = useState(
     user?.is2FAEnabled || false
   );
-  const [countdown, setCountdown] = useState(30);
-  const [isCountdownActive, setIsCountdownActive] = useState(false);
 
   const {
     isOpen: isDisableModalOpen,
@@ -65,37 +63,11 @@ export default function TwoFactorAuth() {
     }
   }, [user]);
 
-  // Countdown timer for TOTP code
-  useEffect(() => {
-    let timer;
-    if (isCountdownActive) {
-      timer = setInterval(() => {
-        setCountdown((prev) => {
-          if (prev <= 1) {
-            setCountdown(30);
-            return 30;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [isCountdownActive]);
-
-  // Start countdown when setup is initiated
-  useEffect(() => {
-    if (setupStage) {
-      setIsCountdownActive(true);
-    } else {
-      setIsCountdownActive(false);
-      setCountdown(30);
-    }
-  }, [setupStage]);
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors,  },
     reset,
     control,
   } = useForm({
@@ -136,7 +108,16 @@ export default function TwoFactorAuth() {
       setSetupStage(false);
       setQrCodeUrl(null);
       setSetupSecret(null);
-      refreshUserData && refreshUserData();
+      const success = await refreshUserData();
+      if (!success) {
+        console.log("User data refresh failed, but 2FA status was updated successfully");
+        // Optionally update just the 2FA status in the current user object
+        if (user) {
+          const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+      }
     } catch (err) {
       console.error("Enable 2FA failed:", err);
       setError(
@@ -156,7 +137,16 @@ export default function TwoFactorAuth() {
       const response = await disable2FA({token: data.token});
       setSuccessMessage(response.data.message || "2FA disabled successfully!");
       setIs2FAEnabledState(false);
-      refreshUserData && refreshUserData();
+      const success = await refreshUserData();
+      if (!success) {
+        console.log("User data refresh failed, but 2FA status was updated successfully");
+        // Optionally update just the 2FA status in the current user object
+        if (user) {
+          const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
+          setUser(updatedUser);
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+        }
+      }
     } catch (err) {
       console.error("Disable 2FA failed:", err);
       setError(
@@ -273,7 +263,7 @@ export default function TwoFactorAuth() {
                   <Card className="w-24 p-2 bg-default-50 dark:bg-default-100/10 border border-default-200 dark:border-default-100">
                     <CardBody className="p-0 items-center text-center">
                       <Image
-                        src="/assets/auth/google-authenticator.png"
+                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Google_Authenticator_%28April_2023%29.svg/800px-Google_Authenticator_%28April_2023%29.svg.png"
                         width={40}
                         height={40}
                         className="mx-auto"
@@ -285,7 +275,7 @@ export default function TwoFactorAuth() {
                   <Card className="w-24 p-2 bg-default-50 dark:bg-default-100/10 border border-default-200 dark:border-default-100">
                     <CardBody className="p-0 items-center text-center">
                       <Image
-                        src="/assets/auth/authy.png"
+                        src="https://play-lh.googleusercontent.com/NxyEuJRx4jjR1Q9PXOPGExFQXDKr_pZJ61Cb15eR0aX3UTZKAxWsXvK9Gh4K-NUd5A=w480-h960-rw"
                         width={40}
                         height={40}
                         className="mx-auto"
@@ -297,7 +287,7 @@ export default function TwoFactorAuth() {
                   <Card className="w-24 p-2 bg-default-50 dark:bg-default-100/10 border border-default-200 dark:border-default-100">
                     <CardBody className="p-0 items-center text-center">
                       <Image
-                        src="/assets/auth/microsoft-auth.png"
+                        src="https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/50/6d/88/506d88fd-8195-0b7a-f654-870715665ff5/AppIcon-0-1x_U007emarketing-0-11-0-85-220-0.png/434x0w.webp"
                         width={40}
                         height={40}
                         className="mx-auto"
@@ -319,7 +309,7 @@ export default function TwoFactorAuth() {
                   </h4>
                 </div>
                 <div className="flex flex-col lg:flex-row justify-center lg:justify-normal gap-2  items-center bg-white p-6 rounded-lg shadow-sm border border-default-200">
-                  <div className="mb-4 sm:mb-0">
+                  <div className="mb-4 sm:mb-0 min-w-[33%]">
                     <Image
                       src={qrCodeUrl}
                       width={180}
@@ -370,11 +360,7 @@ export default function TwoFactorAuth() {
                         input: "bg-content2 dark:bg-content1",
                       }}
                     />
-                    {errors.token && (
-                      <p className="text-danger text-xs mt-1">
-                        {errors.token.message}
-                      </p>
-                    )}
+                    
                   </div>
                   <div className="flex flex-wrap gap-2">
                     <Button
@@ -515,11 +501,6 @@ export default function TwoFactorAuth() {
                               input: "bg-content2 dark:bg-content1",
                             }}
                           />
-                          {errors.token && (
-                            <p className="text-danger text-xs mt-1">
-                              {errors.token.message}
-                            </p>
-                          )}
                         </div>
                       </CardBody>
                     </Card>

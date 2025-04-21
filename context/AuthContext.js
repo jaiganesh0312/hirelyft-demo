@@ -90,10 +90,11 @@ export const AuthProvider = ({ children }) => {
       const { user: userData } = response.data;
       setUser(userData);
       localStorage.setItem('user', JSON.stringify(userData));
+      return true; // Indicate success
     } catch (err) {
       console.error("Failed to refresh user data:", err);
-      setUser(null);
-      localStorage.removeItem('user');
+      // Don't clear user data on error - just return false to indicate failure
+      return false;
     }
   }, []);
 
@@ -105,8 +106,9 @@ export const AuthProvider = ({ children }) => {
     loading,
     error,
     setError,
-    refreshUserData, // Allow components to clear errors
-    checkAuthLoading: loading, // Alias for clarity on initial load
+    setUser,
+    refreshUserData,
+    checkAuthLoading: loading,
   };
 
   return (

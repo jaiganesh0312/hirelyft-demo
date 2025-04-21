@@ -17,6 +17,7 @@ import { resendOtp, verifyEmail } from "@/services/authService";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
+import { useAuth } from "@/context/AuthContext";
 
 // Validation Schema for OTP input
 const otpSchema = z.object({
@@ -32,6 +33,7 @@ const otpSchema = z.object({
 function VerifyEmailNoticeContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { setUser } = useAuth();
   const email = searchParams.get("email");
 
   const [loading, setLoading] = useState(false);
@@ -91,6 +93,9 @@ function VerifyEmailNoticeContent() {
       localStorage.setItem('authToken', token);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(userData));
+      
+      // Update the AuthContext state
+      setUser(userData);
 
       // Redirect to home page after a brief delay to show success message
       setTimeout(() => {

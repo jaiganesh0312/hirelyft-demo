@@ -8,6 +8,7 @@ import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, InputOTP, 
 import { Icon } from '@iconify/react';
 import { requestOtpLogin, verifyOtpLogin } from '@/services/authService';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/context/AuthContext';
 
 // Validation Schemas
 const emailSchema = z.object({
@@ -22,6 +23,7 @@ const otpSchema = z.object({
 
 export default function LoginOtpPage() {
   const router = useRouter();
+  const { setUser } = useAuth();
   const [stage, setStage] = useState('enterEmail'); // 'enterEmail' or 'enterOtp'
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -72,15 +74,14 @@ export default function LoginOtpPage() {
       localStorage.setItem('authToken', token);
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(userData));
-      // Need to update AuthContext state - ideally context exposes a method for this
-      // For now, we might need to reload or push state directly if context allows
-      // This depends on AuthContext implementation details.
-      // As a workaround, we can trigger a reload or use the login function if it just sets state
-      router.replace('/'); // Force reload to update context, or router.push('/') if context updates correctly
+      
+      // Update the AuthContext state
+      setUser(userData);
+      
+      // Redirect after updating the state
+      router.replace('/');
 
       setSuccessMessage('Login successful!');
-      // Redirect is handled by AuthContext or manual reload above
-
     } catch (err) {
       console.error("Verify OTP failed:", err);
       setError(err.response?.data?.message || 'Failed to verify OTP. It might be incorrect or expired.');
