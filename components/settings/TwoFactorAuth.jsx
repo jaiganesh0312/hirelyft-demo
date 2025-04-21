@@ -6,7 +6,6 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import {
   Button,
-  Input,
   Spinner,
   Image,
   Card,
@@ -21,7 +20,6 @@ import {
   useDisclosure,
   InputOtp,
   Chip,
-  Progress,
   Snippet,
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
@@ -105,13 +103,12 @@ export default function TwoFactorAuth() {
       setQrCodeUrl(null);
       setSetupSecret(null);
       if (user) {
-        const updatedUser = { ...user, is2FAEnabled: true }; 
+        const updatedUser = { ...user, is2FAEnabled: true };
         setUser(updatedUser);
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
       setIs2FAEnabledState(true);
       setSuccessMessage(response.data.message || "2FA enabled successfully!");
-
     } catch (err) {
       console.error("Enable 2FA failed:", err);
       setError(
@@ -136,7 +133,6 @@ export default function TwoFactorAuth() {
       }
       setSuccessMessage(response.data.message || "2FA disabled successfully!");
       setIs2FAEnabledState(false);
-
     } catch (err) {
       console.error("Disable 2FA failed:", err);
       setError(
@@ -223,8 +219,8 @@ export default function TwoFactorAuth() {
                 className="text-xl text-warning-600"
               />
               <p className="text-sm text-warning-700 dark:text-warning-400">
-                With 2FA enabled, you&rsquo;ll need your phone or other device to sign
-                in. Make sure to keep backup codes in a safe place.
+                With 2FA enabled, you&rsquo;ll need your phone or other device
+                to sign in. Make sure to keep backup codes in a safe place.
               </p>
             </CardBody>
           </Card>
@@ -253,7 +249,7 @@ export default function TwoFactorAuth() {
                   <Card className="w-24 p-2 bg-default-50 dark:bg-default-100/10 border border-default-200 dark:border-default-100">
                     <CardBody className="p-0 items-center text-center">
                       <Image
-                        src="https://upload.wikimedia.org/wikipedia/commons/thumb/8/84/Google_Authenticator_%28April_2023%29.svg/800px-Google_Authenticator_%28April_2023%29.svg.png"
+                        src="/google-authenticator-logo.png"
                         width={40}
                         height={40}
                         className="mx-auto"
@@ -265,7 +261,7 @@ export default function TwoFactorAuth() {
                   <Card className="w-24 p-2 bg-default-50 dark:bg-default-100/10 border border-default-200 dark:border-default-100">
                     <CardBody className="p-0 items-center text-center">
                       <Image
-                        src="https://play-lh.googleusercontent.com/NxyEuJRx4jjR1Q9PXOPGExFQXDKr_pZJ61Cb15eR0aX3UTZKAxWsXvK9Gh4K-NUd5A=w480-h960-rw"
+                        src="/authy-logo.png"
                         width={40}
                         height={40}
                         className="mx-auto"
@@ -277,7 +273,7 @@ export default function TwoFactorAuth() {
                   <Card className="w-24 p-2 bg-default-50 dark:bg-default-100/10 border border-default-200 dark:border-default-100">
                     <CardBody className="p-0 items-center text-center">
                       <Image
-                        src="https://is1-ssl.mzstatic.com/image/thumb/Purple221/v4/50/6d/88/506d88fd-8195-0b7a-f654-870715665ff5/AppIcon-0-1x_U007emarketing-0-11-0-85-220-0.png/434x0w.webp"
+                        src="/microsoft-authenticator-logo.png"
                         width={40}
                         height={40}
                         className="mx-auto"
@@ -311,7 +307,7 @@ export default function TwoFactorAuth() {
                   {setupSecret && (
                     <div className="flex flex-col w-full">
                       <p className="text-sm text-default-600 mb-2 w-full">
-                        If you can't scan the QR code, enter this code manually,
+                        If you can&rsquo;t scan the QR code, enter this code manually,
                         make sure you do not share it with anyone:
                       </p>
                       <Snippet color="primary" codeString={setupSecret}>
@@ -403,7 +399,8 @@ export default function TwoFactorAuth() {
                   </div>
                   <p className="text-sm text-default-600 dark:text-default-400 mt-1">
                     Your account is protected with two-factor authentication.
-                    You&rsquo;ll need to enter a verification code when signing in.
+                    You&rsquo;ll need to enter a verification code when signing
+                    in.
                   </p>
                 </div>
               </div>
@@ -449,7 +446,7 @@ export default function TwoFactorAuth() {
           >
             <ModalContent>
               {(onClose) => (
-                <>
+                <form onSubmit={handleSubmit(handleDisable2FA)}>
                   <ModalHeader className="flex flex-col gap-1">
                     <div className="flex items-center gap-2">
                       <Icon
@@ -477,7 +474,6 @@ export default function TwoFactorAuth() {
                         <div>
                           <InputOtp
                             {...register("token")}
-                            placeholder="······"
                             variant="bordered"
                             isInvalid={!!errors.token}
                             errorMessage={errors.token?.message}
@@ -488,7 +484,6 @@ export default function TwoFactorAuth() {
                               base: "max-w-full",
                             }}
                             autoFocus
-                            
                           />
                         </div>
                       </CardBody>
@@ -496,6 +491,7 @@ export default function TwoFactorAuth() {
                   </ModalBody>
                   <ModalFooter>
                     <Button
+                      type="button"
                       color="default"
                       variant="light"
                       onPress={onClose}
@@ -504,8 +500,8 @@ export default function TwoFactorAuth() {
                       Cancel
                     </Button>
                     <Button
+                      type="submit"
                       color="danger"
-                      onPress={handleSubmit(handleDisable2FA)}
                       isLoading={loading}
                       isDisabled={loading}
                       startContent={<Icon icon="mdi:shield-off-outline" />}
@@ -513,7 +509,7 @@ export default function TwoFactorAuth() {
                       Disable 2FA
                     </Button>
                   </ModalFooter>
-                </>
+                </form>
               )}
             </ModalContent>
           </Modal>
