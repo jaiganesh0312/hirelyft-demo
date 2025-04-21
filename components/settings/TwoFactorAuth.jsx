@@ -103,8 +103,6 @@ export default function TwoFactorAuth() {
     setLoading(true);
     try {
       const response = await enable2FA({ token: data.token });
-      setSuccessMessage(response.data.message || "2FA enabled successfully!");
-      setIs2FAEnabledState(true);
       setSetupStage(false);
       setQrCodeUrl(null);
       setSetupSecret(null);
@@ -113,6 +111,8 @@ export default function TwoFactorAuth() {
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
+      setIs2FAEnabledState(true);
+      setSuccessMessage(response.data.message || "2FA enabled successfully!");
 
     } catch (err) {
       console.error("Enable 2FA failed:", err);
@@ -131,14 +131,13 @@ export default function TwoFactorAuth() {
     setLoading(true);
     try {
       const response = await disable2FA({token: data.token});
-      setSuccessMessage(response.data.message || "2FA disabled successfully!");
-      setIs2FAEnabledState(false);
-
       if (user) {
         const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
       }
+      setSuccessMessage(response.data.message || "2FA disabled successfully!");
+      setIs2FAEnabledState(false);
     } catch (err) {
       console.error("Disable 2FA failed:", err);
       setError(
