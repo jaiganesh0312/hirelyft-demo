@@ -53,11 +53,7 @@ export default function LoginPage() {
     if (!result.success) {
       if (result.require2FA) {
         setRequires2FA(true);
-        // Optionally focus the TOTP input field here
-      } else {
-        // Error is already set in AuthContext
-        setRequires2FA(false); // Reset 2FA state if login failed for other reasons
-      }
+      } 
     } else {
       // Login successful, AuthContext handles redirect
       reset(); // Clear form on successful login
