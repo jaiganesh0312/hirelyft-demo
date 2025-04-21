@@ -1,7 +1,16 @@
-"use client";
-import React from "react";
-import { HeroUIProvider } from "@heroui/react";
+'use client';
 
-export default function Providers({ children }) {
-  return <HeroUIProvider>{children}</HeroUIProvider>;
+import { HeroUIProvider } from "@heroui/react";
+import { AuthProvider } from "@/context/AuthContext";
+import  Navbar  from "@/components/Navbar";
+
+export function Providers({ children }) {
+  return (
+    <HeroUIProvider labelPlacement="outside">
+      <AuthProvider>
+        <Navbar />
+        {children}
+      </AuthProvider>
+    </HeroUIProvider>
+  );
 }

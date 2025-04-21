@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+
 import { Button, Card, CardBody, Chip, Image } from "@heroui/react";
 import { Icon } from '@iconify/react';
 
@@ -52,7 +53,7 @@ export default function HomePage() {
             </div>
             <div className="md:w-1/2">
               <Image 
-                src={'https://res.cloudinary.com/dxs6wjuur/image/upload/v1744705723/job_search_illustration_hw8jk7.png'} 
+                src='https://res.cloudinary.com/dxs6wjuur/image/upload/v1744705723/job_search_illustration_hw8jk7.png'
                 alt="Job search illustration" 
                 className="h-auto w-full rounded-lg shadow-xl"
               />
