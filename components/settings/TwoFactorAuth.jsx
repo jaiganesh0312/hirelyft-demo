@@ -38,7 +38,7 @@ const totpSchema = z.object({
 });
 
 export default function TwoFactorAuth() {
-  const { user, checkAuthLoading, isAuthenticated } =
+  const { user, checkAuthLoading, isAuthenticated, setUser } =
     useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -103,26 +103,53 @@ export default function TwoFactorAuth() {
     setLoading(true);
     try {
       const response = await enable2FA({ token: data.token });
+      console.log("Enable response");
       setSetupStage(false);
+      console.log("Enable setupstage");
+
       setQrCodeUrl(null);
+      console.log("Enable qrcode");
+
       setSetupSecret(null);
+      console.log("Enable secret");
+
       if (user) {
+        console.log("Enable if condition");
+
         const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
+        console.log("Enable upatedUser");
+
         setUser(updatedUser);
+        console.log("Enable setUser");
+
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log("Enable setItem to local storage");
+
+
       }
+      console.log("Enable finished if condition");
+
       setIs2FAEnabledState(true);
+      console.log("Enable 2fa enabled state");
+
       setSuccessMessage(response.data.message || "2FA enabled successfully!");
+      console.log("Enable set success message");
+
 
     } catch (err) {
+      console.log("Enable error", err);
+      console.log("Enable error", JSON.stringify(err));
       console.error("Enable 2FA failed:", err);
       setError(
         err.response?.data?.message ||
           "Failed to enable 2FA. The code might be incorrect or expired."
       );
+      console.log("Enable setError");
     } finally {
       setLoading(false);
     }
+    console.log("Enable done");
+
   };
 
   const handleDisable2FA = async (data) => {
@@ -131,14 +158,32 @@ export default function TwoFactorAuth() {
     setLoading(true);
     try {
       const response = await disable2FA({token: data.token});
+      console.log("disable response");
+
       if (user) {
-        const updatedUser = {...user, is2FAEnabled: true}; // or false for disable
+        console.log("disable if condition");
+
+        const updatedUser = {...user, is2FAEnabled: false}; 
+        console.log("disable updatedUser");
+
         setUser(updatedUser);
+        console.log("disable setUser");
+
+
         localStorage.setItem('user', JSON.stringify(updatedUser));
+        console.log("disable set local storage");
+
       }
+      console.log("disable finshed if condition");
+
       setSuccessMessage(response.data.message || "2FA disabled successfully!");
+      console.log("disable set success message");
+
       setIs2FAEnabledState(false);
+      console.log("disable set2faenable");
+
     } catch (err) {
+      console.log("disable response:", err);
       console.error("Disable 2FA failed:", err);
       setError(
         err.response?.data?.message ||
