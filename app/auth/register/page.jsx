@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, Divider, RadioGroup, Radio } from "@heroui/react";
+import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, Divider, RadioGroup, Radio, addToast } from "@heroui/react";
 import { Icon } from '@iconify/react';
 import { registerUser } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -77,11 +77,21 @@ export default function RegisterPage() {
     try {
       const response = await registerUser(registrationData);
       setSuccessMessage(response.data.message || 'Registration successful! Please check your email to verify your account.');
+      addToast({
+        title: "Success!",
+        description: "Registration was successfull",
+        color: "success",
+      });
       reset(); // Clear form
       // Redirect to a page indicating email verification is needed
       router.push(`/auth/verify-email?email=${encodeURIComponent(data.email)}`);
     } catch (err) {
       console.error("Registration failed:", err);
+      addToast({
+        title: "Error!",
+        description: "Registration Failed",
+        color: "danger",
+      });
       const errorMessage = err.response?.data?.message || 'Registration failed. Please try again.';
       setError(errorMessage);
     } finally {

@@ -4,10 +4,9 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link } from "@heroui/react";
+import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, addToast } from "@heroui/react";
 import { Icon } from '@iconify/react';
 import { forgotPassword } from '@/services/authService';
-import { useRouter } from 'next/navigation';
 
 // Validation Schema
 const forgotPasswordSchema = z.object({
@@ -38,9 +37,19 @@ export default function ForgotPasswordPage() {
     try {
       const response = await forgotPassword(data);
       setSuccessMessage(response.data.message || 'Password reset email sent successfully! Please check your inbox.');
+      addToast({
+        title: "Success!",
+        description: "Reset Link sent to your email",
+        color: "success",
+      });
       reset(); // Clear form
     } catch (err) {
-      console.error("Forgot password request failed:", err);
+      console.error(":", err);
+      addToast({
+        title: "Error!",
+        description: "Forgot password request failed",
+        color: "success",
+      });
       setError(err.response?.data?.message || 'Failed to send password reset email. Please check the email address and try again.');
     } finally {
       setLoading(false);

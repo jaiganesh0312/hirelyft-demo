@@ -11,6 +11,7 @@ import {
   Link,
   Spinner,
   InputOtp,
+  addToast
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { resendOtp, verifyEmail } from "@/services/authService";
@@ -96,13 +97,20 @@ function VerifyEmailNoticeContent() {
       
       // Update the AuthContext state
       setUser(userData);
-
-      // Redirect to home page after a brief delay to show success message
-      setTimeout(() => {
-        router.push("/");
-      }, 1500);
+      addToast({
+        title: "Success!",
+        description: "Email Verified successfully",
+        color: "success",
+      });
+      // Redirect to home page 
+      setTimeout(() => router.push(`/${userData.role}/dashboard`), 1500);
     } catch (err) {
       console.error("Verify OTP failed:", err);
+      addToast({
+        title: "Error!",
+        description: "Verification failed!",
+        color: "success",
+      });
       setError(
         err.response?.data?.message ||
           "Failed to verify email. The code might be incorrect or expired."
@@ -172,7 +180,6 @@ function VerifyEmailNoticeContent() {
               </p>
               <InputOtp
                 {...register("otp")}
-                placeholder="······"
                 variant="bordered"
                 isInvalid={!!errors.otp}
                 errorMessage={errors.otp?.message}
@@ -184,9 +191,6 @@ function VerifyEmailNoticeContent() {
                   input: "bg-content2 dark:bg-content1",
                 }}
               />
-              {errors.otp && (
-                <p className="text-danger text-xs mt-1">{errors.otp.message}</p>
-              )}
             </div>
 
             <Button

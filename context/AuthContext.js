@@ -49,7 +49,7 @@ export const AuthProvider = ({ children }) => {
       localStorage.setItem('refreshToken', refreshToken);
       localStorage.setItem('user', JSON.stringify(userData));
       setUser(userData);
-      router.push('/'); // Redirect to home or dashboard after login
+      router.push(`/${userData.role}/dashboard`); // Redirect to home or dashboard after login
       return { success: true };
     } catch (err) {
       console.error("Login failed:", err);

@@ -1,123 +1,136 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { useAuth } from "@/context/AuthContext";
-import { Spinner, Card, CardHeader, CardBody, Tabs, Tab, Divider } from "@heroui/react";
-import UpdatePasswordForm from "@/components/settings/UpdatePasswordForm"; // We'll create this
-import TwoFactorAuth from "@/components/settings/TwoFactorAuth"; // We'll create this
-import { Icon } from "@iconify/react";
+import React from 'react';
+import {
+  Tabs, Tab, Chip
+} from "@heroui/react";
+import { Icon } from '@iconify/react';
+import { useAuth } from '@/context/AuthContext';
+import ProfileSettings from '@/components/settings/ProfileSettings';
+import NotificationSettings from '@/components/settings/NotificationSettings';
+import SecuritySettings from '@/components/settings/SecuritySettings';
+import PrivacySettings from '@/components/settings/PrivacySettings';
+import AccessibilitySettings from '@/components/settings/AccessibilitySettings';
 
-export default function SettingsPage() {
-  const { user, isAuthenticated, checkAuthLoading } = useAuth();
-  const router = useRouter();
+export default function GeneralSettingsPage() {
+  const { user, checkAuthLoading } = useAuth(); // Get user data from context
 
-  useEffect(() => {
-    // Redirect to login if not authenticated and initial check is done
-    if (!checkAuthLoading && !isAuthenticated) {
-      router.replace("/auth/login");
-    }
-  }, [isAuthenticated, checkAuthLoading, router]);
-
-  // Show loading spinner while checking auth or if redirecting
-  if (checkAuthLoading || !isAuthenticated) {
+  if (checkAuthLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <Spinner label="Loading Settings..." />
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-pulse text-center">
+          <p className="text-default-600">Loading user data...</p>
+        </div>
       </div>
     );
   }
 
-  // Render settings content if authenticated
-  return (
-    <div className="container mx-auto px-4 py-6">
-      <h1 className="text-3xl font-bold mb-6 dark:text-white">
-        Account Settings
-      </h1>
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Icon icon="mdi:account-alert-outline" className="text-5xl text-danger mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Authentication Required</h2>
+        <p className="text-default-600">Please sign in to access your settings.</p>
+      </div>
+    );
+  }
 
-      <Tabs aria-label="Settings options" variant="underlined" color="primary"  className="flex justify-center" >
+  return (
+    <div className="flex flex-col space-y-6 max-w-6xl mx-auto py-8 px-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+          <h1 className="text-2xl font-bold mb-2">Account Settings</h1>
+          <p className="text-default-600">Manage your account settings and preferences</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Chip color="success" variant="dot" className="capitalize">Active Account</Chip>
+          <div className="flex items-center">
+            <Icon icon="mdi:account-circle" className="text-xl mr-1 text-primary" />
+            <span className="text-sm font-medium">{user.email}</span>
+          </div>
+        </div>
+      </div>
+
+      <Tabs 
+        aria-label="Settings Options" 
+        color="primary" 
+        variant="underlined" 
+        classNames={{
+          tabList: "overflow-x-auto",
+          cursor: "bg-primary",
+          tab: "data-[selected=true]:text-primary font-medium",
+        }}
+      >
         <Tab 
-          key="Update Password"
+          key="profile" 
           title={
-            <div className="flex items-center gap-2">
-              <Icon icon="mdi:lock-outline" className="text-xl" />
-              <span className="">Update Password</span>
+            <div className="flex items-center space-x-2">
+              <Icon icon="mdi:account-circle-outline" className="text-xl" />
+              <span>Profile</span>
             </div>
           }
-          className="w-full max-w-xl mx-auto"
         >
-          <Card className="shadow-sm border border-default-200 dark:border-default-100 w-full">
-            <CardHeader className="flex justify-between items-center bg-default-50 dark:bg-default-100/10">
-              <div>
-                <h2 className="text-xl font-semibold dark:text-white">
-                  Password Settings
-                </h2>
-                <p className="text-sm text-default-500">
-                  Update your password to keep your account secure
-                </p>
-              </div>
-              <Icon
-                icon="mdi:lock-outline"
-                className="text-2xl text-default-400"
-              />
-            </CardHeader>
-            <CardBody>
-              <UpdatePasswordForm />
-            </CardBody>
-          </Card>
+          <div className="py-6">
+            <ProfileSettings />
+          </div>
         </Tab>
-        <Tab
-          key="Two Factor Authentication"
+        
+        <Tab 
+          key="security" 
           title={
-            <div className="flex items-center gap-2">
-              <Icon icon="mdi:shield-key-outline" className="text-xl" />
-              <span>Two Factor Authentication</span>
+            <div className="flex items-center space-x-2">
+              <Icon icon="mdi:shield-lock-outline" className="text-xl" />
+              <span>Security</span>
             </div>
           }
-          className="max-w-2xl w-full mx-auto"
         >
-          <Card className="shadow-sm border border-default-200 dark:border-default-100">
-            <CardHeader className="flex justify-between items-center bg-default-50 dark:bg-default-100/10">
-              <div>
-                <h2 className="text-xl font-semibold dark:text-white">
-                  Two-Factor Authentication
-                </h2>
-                <p className="text-sm text-default-500">
-                  Add an extra layer of security to your account
-                </p>
-              </div>
-              <Icon
-                icon="mdi:shield-key-outline"
-                className="text-2xl text-default-400"
-              />
-            </CardHeader>
-            <CardBody>
-              <TwoFactorAuth />
-            </CardBody>
-          </Card>
+          <div className="py-6">
+            <SecuritySettings />
+          </div>
+        </Tab>
+
+        <Tab 
+          key="notifications" 
+          title={
+            <div className="flex items-center space-x-2">
+              <Icon icon="mdi:bell-outline" className="text-xl" />
+              <span>Notifications</span>
+            </div>
+          }
+        >
+          <div className="py-6">
+            <NotificationSettings />
+          </div>
+        </Tab>
+
+        <Tab 
+          key="privacy" 
+          title={
+            <div className="flex items-center space-x-2">
+              <Icon icon="mdi:eye-outline" className="text-xl" />
+              <span>Privacy</span>
+            </div>
+          }
+        >
+          <div className="py-6">
+            <PrivacySettings />
+          </div>
+        </Tab>
+
+        <Tab 
+          key="accessibility" 
+          title={
+            <div className="flex items-center space-x-2">
+              <Icon icon="mdi:accessibility" className="text-xl" />
+              <span>Accessibility</span>
+            </div>
+          }
+        >
+          <div className="py-6">
+            <AccessibilitySettings />
+          </div>
         </Tab>
       </Tabs>
-      {/* Update Password Card
-            <Card className="shadow-md">
-                <CardHeader>
-                    <h2 className="text-xl font-semibold dark:text-white">Update Password</h2>
-                </CardHeader>
-                <CardBody>
-                    <UpdatePasswordForm />
-                </CardBody>
-            </Card>
-
-            {/* 2FA Settings Card */}
-      {/* <Card className="shadow-md">
-                <CardHeader>
-                    <h2 className="text-xl font-semibold dark:text-white">Two-Factor Authentication (2FA)</h2>
-                </CardHeader>
-                <CardBody>
-                    <TwoFactorAuth />
-                </CardBody>
-            </Card> */}
-
-      {/* Other settings sections can be added here */}
     </div>
   );
 }

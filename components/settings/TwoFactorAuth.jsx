@@ -213,7 +213,7 @@ export default function TwoFactorAuth() {
           </Card>
 
           <Card className="bg-warning-50 dark:bg-warning-900/10 border border-warning-200 dark:border-warning-900/30">
-            <CardBody className="flex gap-3 p-3">
+            <CardBody className="flex gap-3 p-3 flex-row">
               <Icon
                 icon="mdi:information-outline"
                 className="text-xl text-warning-600"
@@ -334,7 +334,6 @@ export default function TwoFactorAuth() {
                   <div>
                     <InputOtp
                       {...register("token")}
-                      placeholder="······"
                       variant="bordered"
                       isInvalid={!!errors.token}
                       errorMessage={errors.token?.message}
@@ -345,6 +344,7 @@ export default function TwoFactorAuth() {
                         base: "max-w-full",
                         input: "bg-content2 dark:bg-content1",
                       }}
+                      className="lg:ml-6"
                     />
                   </div>
                   <div className="flex flex-wrap gap-2">

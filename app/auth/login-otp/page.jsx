@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, InputOtp } from "@heroui/react"; // Assuming InputOTP/OTPInput exists or use regular Input
+import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, InputOtp, addToast } from "@heroui/react";
 import { Icon } from '@iconify/react';
 import { requestOtpLogin, verifyOtpLogin } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -52,9 +52,19 @@ export default function LoginOtpPage() {
       setEmail(data.email); // Store email for the next stage
       setStage('enterOtp');
       setSuccessMessage('OTP sent successfully! Please check your email.');
+      addToast({
+        title: "Success!",
+        description: "OTP sent successfully",
+        color: "success",
+      });
       otpForm.reset(); // Reset OTP form when moving to OTP stage
     } catch (err) {
       console.error("Request OTP failed:", err);
+      addToast({
+        title: "Error!",
+        description: "Failed to request OTP",
+        color: "danger",
+      });
       setError(err.response?.data?.message || 'Failed to request OTP. Please check the email and try again.');
     } finally {
       setLoading(false);
@@ -77,13 +87,22 @@ export default function LoginOtpPage() {
       
       // Update the AuthContext state
       setUser(userData);
-      
-      // Redirect after updating the state
-      router.replace('/');
-
       setSuccessMessage('Login successful!');
+      addToast({
+        title: "Success!",
+        description: "login successfull",
+        color: "success",
+      });
+      
+      router.push(`/${userData.role}/dashboard`); // Redirect to home or dashboard after login
+
     } catch (err) {
       console.error("Verify OTP failed:", err);
+      addToast({
+        title: "Error!",
+        description: "login Failed!",
+        color: "success",
+      });
       setError(err.response?.data?.message || 'Failed to verify OTP. It might be incorrect or expired.');
     } finally {
       setLoading(false);
