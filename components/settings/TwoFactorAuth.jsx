@@ -21,6 +21,7 @@ import {
   InputOtp,
   Chip,
   Snippet,
+  addToast
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import { initialize2FA, enable2FA, disable2FA } from "@/services/authService";
@@ -109,8 +110,18 @@ export default function TwoFactorAuth() {
       }
       setIs2FAEnabledState(true);
       setSuccessMessage(response.data.message || "2FA enabled successfully!");
+      addToast({
+        title: "Success!",
+        description: "2FA enabled succesfully!",
+        color: "success"
+      })
     } catch (err) {
       console.error("Enable 2FA failed:", err);
+      addToast({
+        title: "Error!",
+        description: "Failed to enable 2FA!",
+        color: "danger"
+      })
       setError(
         err.response?.data?.message ||
           "Failed to enable 2FA. The code might be incorrect or expired."
@@ -132,9 +143,19 @@ export default function TwoFactorAuth() {
         localStorage.setItem("user", JSON.stringify(updatedUser));
       }
       setSuccessMessage(response.data.message || "2FA disabled successfully!");
+      addToast({
+        title: "Success!",
+        description: "2FA disabled succesfully!",
+        color: "success"
+      });
       setIs2FAEnabledState(false);
     } catch (err) {
       console.error("Disable 2FA failed:", err);
+      addToast({
+        title: "Error!",
+        description: "Failed to disable 2FA!",
+        color: "danger"
+      });
       setError(
         err.response?.data?.message ||
           "Failed to disable 2FA. Please try again."

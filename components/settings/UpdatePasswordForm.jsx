@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardBody, Tooltip, Progress } from "@heroui/react";
+import { Button, Input, Card, CardBody, Tooltip, Progress, addToast} from "@heroui/react";
 import { Icon } from '@iconify/react';
 import { updatePassword } from '@/services/authService';
 
@@ -96,9 +96,19 @@ export default function UpdatePasswordForm() {
         confirmPassword: data.confirmPassword
       });
       setSuccessMessage(response.data.message || 'Password updated successfully!');
+      addToast({
+        title: "Success!",
+        description: "Password updated succesfully!",
+        color: "success"
+      })
       reset();
     } catch (err) {
       console.error("Update password failed:", err);
+      addToast({
+        title: "Error!",
+        description: "Failed to update password!",
+        color: "danger"
+      })
       setError(err.response?.data?.message || 'Failed to update password. Please check your current password.');
     } finally {
       setLoading(false);

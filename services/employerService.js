@@ -1,129 +1,160 @@
-import axiosInstance from '@/utils/axiosInstance';
-
-const API_URL = '/employers'; // Base path for employer endpoints
+import axiosInstance from '../utils/axiosInstance';
 
 /**
- * Fetches the logged-in employer's profile.
- * @route GET /api/employers/me
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if request was successful
- * @response {Object} employer - Employer profile data
- * @response {number} employer.id - Employer ID
- * @response {string} employer.company_name - Company name
- * @response {string} employer.company_website - Company website URL
- * @response {string} employer.company_logo - Company logo URL
- * @response {string} employer.company_size - Company size
- * @response {string} employer.industry - Industry sector
- * @response {string} employer.location - Company location
- * @response {number} employer.members_count - Number of team members
- * @response {number} employer.max_members - Maximum allowed team members
- * @response {Object} employer.user - Associated user data
- * @response {number} employer.user.id - User ID
- * @response {string} employer.user.name - User's name
- * @response {string} employer.user.email - User's email
- * @response {string} employer.user.phone_number - User's phone number
- * @response {string} employer.user.avatarUrl - User's avatar URL
- * @description Retrieves the profile of the authenticated employer.
- * Requires authentication token in the header with employer role.
+ * Create an employer profile
+ * @param {Object} profileData - Profile data
+ * @param {string} profileData.company_name - Company name
+ * @param {string} [profileData.company_website] - Company website
+ * @param {string} [profileData.company_logo] - Company logo URL
+ * @param {string} [profileData.company_size] - Company size
+ * @param {string} [profileData.industry] - Industry
+ * @param {string} [profileData.location] - Location
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if profile was created successfully
+ *   - message: {string} - Success or error message
+ *   - employer: {Object} - Created employer profile
  */
-export const getMyEmployerProfile = () => {
-  return axiosInstance.get(`${API_URL}/me`);
+export const createEmployerProfile = async (profileData) => {
+  return axiosInstance.post('/employers/create-employer', profileData);
 };
 
 /**
- * Updates the logged-in employer's profile.
- * @route PUT /api/employers/me
- * @param {object} profileData - The profile data to update
- * @param {string} [profileData.company_name] - Employer's company name
- * @param {string} [profileData.company_website] - Company website URL
- * @param {string} [profileData.company_logo] - URL for the company logo
- * @param {string} [profileData.company_size] - Size of the company (e.g., '1-10 employees')
- * @param {string} [profileData.industry] - Company's industry sector
- * @param {string} [profileData.location] - Company's primary location
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if update was successful
- * @response {string} message - Success/error message
- * @response {Object} employer - Updated employer profile data
- * @description Updates the profile of the authenticated employer. Only specified fields will be updated.
- * Requires authentication token in the header with employer role.
+ * Get current employer profile
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - employer: {Object} - Employer profile data
+ *     - id: {number} - Employer ID
+ *     - userId: {number} - User ID
+ *     - company_name: {string} - Company name
+ *     - company_website: {string} - Company website
+ *     - company_logo: {string} - Company logo URL
+ *     - company_size: {string} - Company size
+ *     - industry: {string} - Industry
+ *     - location: {string} - Location
+ *     - user_employer: {Object} - Associated user data
+ *       - id: {number} - User ID
+ *       - name: {string} - User's name
+ *       - email: {string} - User's email
+ *       - phone_number: {string} - User's phone number
+ *       - avatarUrl: {string} - URL to user's avatar
  */
-export const updateMyEmployerProfile = (profileData) => {
-  return axiosInstance.put(`${API_URL}/me`, profileData);
+export const getMyEmployerProfile = async () => {
+  return axiosInstance.post('/employers/get-my-profile');
 };
 
 /**
- * Fetches a specific member employer profile by ID.
- * @route GET /api/employers/:id
- * @param {string|number} memberId - The ID of the member employer to fetch
- * @param {object} params - Query parameters
- * @param {string|number} params.head_id - The ID of the head employer (required)
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if request was successful
- * @response {Object} member - Member employer profile data with user information
- * @description Used to fetch a member profile under a specific head employer.
- * The head_id query parameter is required to verify access rights.
- * Requires authentication token in the header.
+ * Update employer profile
+ * @param {Object} profileData - Profile data to update
+ * @param {string} [profileData.company_name] - Company name
+ * @param {string} [profileData.company_website] - Company website
+ * @param {string} [profileData.company_logo] - Company logo URL
+ * @param {string} [profileData.company_size] - Company size
+ * @param {string} [profileData.industry] - Industry
+ * @param {string} [profileData.location] - Location
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if profile was updated successfully
+ *   - message: {string} - Success or error message
+ *   - employer: {Object} - Updated employer profile
  */
-export const getMemberById = (memberId, params) => {
-  return axiosInstance.get(`${API_URL}/${memberId}`, { params });
+export const updateEmployerProfile = async (profileData) => {
+  return axiosInstance.post('/employers/update-my-profile', profileData);
 };
 
 /**
- * Creates a new member profile under the logged-in employer.
- * @route POST /api/employers/member
- * @param {object} memberData - Data for the new member
- * @param {string|number} memberData.head_id - ID of the head employer (required)
- * @param {string} memberData.name - Member's name (required)
- * @param {string} memberData.email - Member's email (required)
- * @param {string} memberData.phone_number - Member's phone number
- * @param {string} memberData.password - Member's password (required)
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if creation was successful
- * @response {string} message - Success/error message
- * @response {Object} member - Created member profile data
- * @description Creates a new member employer profile under the authenticated head employer.
- * The head employer must not exceed their maximum allowed members.
- * Member's email is automatically verified.
- * Requires authentication token in the header with employer role.
+ * Get employer dashboard statistics
+ * @param {Object} [options] - Options
+ * @param {number} [options.limit=5] - Limit for recent items
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - data: {Object} - Dashboard data
+ *     - stats: {Object} - Statistics
+ *       - active_jobs: {number} - Number of active jobs
+ *       - jobs_growth: {number} - Jobs growth percentage
+ *       - total_applications: {number} - Total applications
+ *       - applications_growth: {number} - Applications growth percentage
+ *       - job_views: {number} - Job views
+ *       - weekly_applications: {number} - Weekly applications
+ *       - conversion_rate: {number} - Conversion rate
+ *       - total_interviews: {number} - Total interviews
+ *       - total_hired: {number} - Total hired
+ *     - recentApplications: {Array<Object>} - Recent job applications
+ *       - id: {string} - Application ID
+ *       - created_at: {string} - Application date
+ *       - status: {string} - Application status
+ *       - applicant: {Object} - Applicant information
+ *       - job: {Object} - Job information
+ *     - activeJobs: {Array<Object>} - Active jobs
+ *       - id: {string} - Job ID
+ *       - title: {string} - Job title
+ *       - location: {string} - Job location
+ *       - is_active: {boolean} - Job active status
+ *       - applications_count: {number} - Number of applications
+ *     - unreadMessages: {Object} - Unread messages info
+ *       - unreadMessages: {number} - Count of unread messages
  */
-export const createMember = (memberData) => {
-  return axiosInstance.post(`${API_URL}/member`, memberData);
+export const getEmployerDashboard = async (options = {}) => {
+  const { limit } = options;
+  let url = '/employers/get-dashboard';
+  
+  if (limit) {
+    url += `?limit=${limit}`;
+  }
+  
+  return axiosInstance.post(url);
 };
 
 /**
- * Fetches all members associated with the logged-in employer.
- * @route GET /api/employers/:id/members
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if request was successful
- * @response {number} count - Total number of members
- * @response {number} max_members - Maximum allowed members for the employer
- * @response {Array} members - Array of member profile objects with user information
- * @description Returns all members linked to the authenticated employer.
- * Requires authentication token in the header with employer role.
+ * Create a member profile for the employer
+ * @param {Object} memberData - Member data
+ * @param {string} memberData.name - Name of the member
+ * @param {string} memberData.email - Email of the member
+ * @param {string} memberData.phone_number - Phone number of the member
+ * @param {string} memberData.password - Password for the member account
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if member was created successfully
+ *   - message: {string} - Success or error message
+ *   - member: {Object} - Created member profile
  */
-export const getMyMembers = () => {
-  return axiosInstance.get(`${API_URL}/members`);
+export const createMember = async (memberData) => {
+  return axiosInstance.post('/employers/create-member', memberData);
 };
 
 /**
- * Removes (deletes) a member associated with the logged-in employer.
- * @route DELETE /api/employers/members/:id
- * @param {string|number} memberId - The ID of the member employer to remove
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if removal was successful
- * @response {string} message - Success/error message
- * @description Deletes a member profile and the associated user account.
- * Updates the head employer's member count.
- * Requires authentication token in the header with employer role.
+ * Get all members for the employer
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - count: {number} - Number of members
+ *   - max_members: {number} - Maximum allowed members
+ *   - members: {Array<Object>} - List of member profiles
+ *     - id: {number} - Member ID
+ *     - userId: {number} - User ID
+ *     - head_id: {number} - Head employer ID
+ *     - company_name: {string} - Company name
+ *     - user_employer: {Object} - Associated user data
  */
-export const removeMember = (memberId) => {
-  return axiosInstance.delete(`${API_URL}/members/${memberId}`);
+export const getAllMembers = async () => {
+  return axiosInstance.post('/employers/get-all-members');
+};
+
+/**
+ * Get member by ID
+ * @param {string} memberId - Member ID
+ * @param {string} headId - Head employer ID
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - member: {Object} - Member profile
+ */
+export const getMemberById = async (memberId, headId) => {
+  return axiosInstance.post(`/employers/get-member-by-id/${memberId}?head_id=${headId}`);
+};
+
+/**
+ * Remove a member
+ * @param {string} memberId - ID of the member to remove
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if member was removed successfully
+ *   - message: {string} - Success or error message
+ */
+export const removeMember = async (memberId) => {
+  return axiosInstance.post(`/employers/remove-member/${memberId}`);
 }; 
-
-
-export const getEmployerStats = () => {
-  return true;
-};
-export const  getRecentApplications = () => {
-  return true;
-}

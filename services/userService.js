@@ -1,81 +1,107 @@
-import axiosInstance from '@/utils/axiosInstance';
-
-const API_URL = '/users'; // Base path for user endpoints
+import axiosInstance from '../utils/axiosInstance';
 
 /**
- * Updates the logged-in user's profile information.
- * @route PUT /api/users/me
- * @param {object} profileData - The profile data to update.
- * @param {string} [profileData.name] - User's name.
- * @param {string} [profileData.phone_number] - User's phone number.
- * @param {string} [profileData.avatarUrl] - URL of the user's avatar image.
- * @returns {Promise} Axios response promise with updated user data.
+ * Get current user's profile
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - avatarBlob: {string|null} - Base64 encoded avatar image if exists
+ *   - user: {Object} - User profile data
+ *     - id: {number} - User ID
+ *     - name: {string} - User's name
+ *     - email: {string} - User's email
+ *     - phone_number: {string} - User's phone number
+ *     - role: {string} - User's role
+ *     - isEmailVerified: {boolean} - Whether email is verified
+ *     - is2FAEnabled: {boolean} - Whether 2FA is enabled
+ *     - avatarUrl: {string} - URL to user's avatar
+ *     - googleId: {string|null} - Google ID if linked
+ *     - createdAt: {string} - Account creation date
+ *     - updatedAt: {string} - Last update date
+ *     - lastLogin: {string} - Last login date
  */
-export const updateProfile = (profileData) => {
-  // The auth token will be added automatically by the axios interceptor
-  return axiosInstance.put(`${API_URL}/me`, profileData);
+export const getProfile = async () => {
+  return axiosInstance.post('/users/get-profile');
 };
 
 /**
- * Fetches the logged-in user's profile information.
- * @route GET /api/users/me
- * @returns {Promise} Axios response promise with the user's data.
+ * Update current user's profile
+ * @param {Object} userData - User data to update
+ * @param {string} [userData.name] - User's name
+ * @param {string} [userData.phone_number] - User's phone number
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if profile was updated successfully
+ *   - message: {string} - Success message
+ *   - avatarBlob: {string|null} - Base64 encoded avatar image if exists
+ *   - user: {Object} - Updated user profile data
+ *     - id: {number} - User ID
+ *     - name: {string} - User's name
+ *     - email: {string} - User's email
+ *     - phone_number: {string} - User's phone number
+ *     - role: {string} - User's role
+ *     - isEmailVerified: {boolean} - Whether email is verified
+ *     - is2FAEnabled: {boolean} - Whether 2FA is enabled
+ *     - avatarUrl: {string} - URL to user's avatar
  */
-export const getProfile = () => {
-    return axiosInstance.get(`${API_URL}/me`);
+export const updateProfile = async (userData) => {
+  return axiosInstance.post('/users/update-profile', userData);
 };
 
 /**
- * Fetches a specific user's profile information by ID (Admin only).
- * @route GET /api/users/:id
- * @param {string|number} userId - The ID of the user to fetch.
- * @returns {Promise} Axios response promise with the user's data.
- * @description Requires admin privileges.
+ * Get user by ID (admin only)
+ * @param {string} userId - User ID to retrieve
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - user: {Object} - User profile data
  */
-export const getUserById = (userId) => {
-    return axiosInstance.get(`${API_URL}/${userId}`);
+export const getUserById = async (userId) => {
+  return axiosInstance.post(`/users/get-user-by-id/${userId}`);
 };
 
 /**
- * Fetches all users (Admin only).
- * @route GET /api/users
- * @param {object} [params] - Optional query parameters (e.g., for pagination if implemented in backend).
- * @returns {Promise} Axios response promise with a list of all users.
- * @description Requires admin privileges.
+ * Get all users (admin only)
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - count: {number} - Number of users
+ *   - users: {Array<Object>} - List of user profiles
  */
-export const getAllUsers = (params) => {
-    return axiosInstance.get(API_URL, { params });
+export const getAllUsers = async () => {
+  return axiosInstance.post('/users/get-all-users');
 };
 
 /**
- * Deletes a specific user by ID (Admin only).
- * @route DELETE /api/users/:id
- * @param {string|number} userId - The ID of the user to delete.
- * @returns {Promise} Axios response promise with success message.
- * @description Requires admin privileges.
+ * Delete user (admin only)
+ * @param {string} userId - User ID to delete
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if user was deleted successfully
+ *   - message: {string} - Success message
  */
-export const deleteUser = (userId) => {
-    return axiosInstance.delete(`${API_URL}/${userId}`);
+export const deleteUser = async (userId) => {
+  return axiosInstance.post(`/users/delete-user/${userId}`);
+};
+
+export const updatePrivacySettings = () => {
+  return {
+    data: {
+      success: true,
+      message: "Privacy settings updated successfully",
+    },
+  };
+};
+
+export const updateAccessibilitySettings = () => {
+  return {
+    data: {
+      success: true,
+      message: "Accessibility settings updated successfully",
+    },
+  };
 };
 
 export const updateNotificationPreferences = () => {
-    return true;
-}
-
-export const updateAccessibilitySettings = () => {
-    return true;
-}
-
-export const updatePrivacySettings = () => {
-    return true;
-}
-
-export const getUsersStats = () => {
-    return true;
-}
-
-export const getLatestUsers = () => {
-    return true;
-}
-
-// Add other user-related service functions here (e.g., uploadAvatar, etc.) 
+  return {
+    data: {
+      success: true,
+      message: "Notification preferences updated successfully",
+    },
+  };
+};

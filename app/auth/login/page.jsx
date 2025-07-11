@@ -11,7 +11,6 @@ import {
   CardHeader,
   CardBody,
   CardFooter,
-  Link,
   Divider,
   Checkbox,
   InputOtp,
@@ -20,6 +19,7 @@ import {
 import { Icon } from "@iconify/react";
 import { useAuth } from "@/context/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 // Validation Schema
 const loginSchema = z.object({
@@ -188,7 +188,7 @@ export default function LoginPage() {
               >
                 Remember me
               </Checkbox>
-              <Link size="sm" href="/auth/forgot-password" isDisabled={loading}>
+              <Link size="sm" href="/auth/forgot-password">
                 Forgot password?
               </Link>
             </div>
@@ -231,7 +231,6 @@ export default function LoginPage() {
                 size="sm"
                 href="/auth/register"
                 className="ml-1"
-                isDisabled={loading}
               >
                 Sign Up
               </Link>

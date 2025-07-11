@@ -9,7 +9,6 @@ import {
   NavbarMenuToggle,
   NavbarMenu,
   NavbarMenuItem,
-  Link,
   Image,
   Button,
   DropdownItem,
@@ -20,10 +19,10 @@ import {
   Badge,
   useDisclosure
 } from "@heroui/react";
+import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
 import { Icon } from '@iconify/react';
 import { usePathname, useRouter } from 'next/navigation';
-import Sidebar from './Sidebar';
 import {
   jobseekerMenuItems,
   employerMenuItems,
@@ -32,7 +31,6 @@ import {
 
 export default function Navbar() {
   const { user, isAuthenticated, logout, checkAuthLoading } = useAuth();
-  const { isOpen: isSidebarOpen, onOpen: onSidebarOpen, onClose: onSidebarClose } = useDisclosure();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
@@ -79,7 +77,7 @@ export default function Navbar() {
     <>
       <NextUINavbar
         isBordered
-        maxWidth="xl"
+        maxWidth="full"
         isMenuOpen={isMenuOpen}
         onMenuOpenChange={setIsMenuOpen}
       >
@@ -88,18 +86,6 @@ export default function Navbar() {
             aria-label={isMenuOpen ? "Close menu" : "Open menu"}
             className="sm:hidden"
           />
-          {/* {isAuthenticated && (
-             <Button
-               isIconOnly
-               variant="light"
-               className="hidden sm:inline-flex"
-               onPress={onSidebarOpen}
-               aria-label="Open sidebar"
-             >
-               <Icon icon="mdi:menu" className="text-xl" />
-             </Button>
-          )} */}
-
           <NavbarBrand>
             <Link href="/">
               <Image src="/SUPER_FINAL_LOGO.png" alt="Hirelyft Logo" className='w-auto h-16' />
@@ -116,7 +102,7 @@ export default function Navbar() {
                 </Link>
               </NavbarItem>
                <NavbarItem>
-                <Link color="foreground" href="/pricing" aria-current={pathname === '/pricing' ? "page" : undefined} isDisabled>
+                <Link color="foreground" href="/pricing" aria-current={pathname === '/pricing' ? "page" : undefined} >
                   Pricing
                 </Link>
               </NavbarItem>
@@ -254,10 +240,6 @@ export default function Navbar() {
            )}
         </NavbarMenu>
       </NextUINavbar>
-
-      {/* {isAuthenticated && (
-        <Sidebar isOpen={isSidebarOpen} onClose={onSidebarClose} userRole={user?.role} />
-      )} */}
     </>
   );
 } 

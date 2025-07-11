@@ -1,176 +1,213 @@
-import axiosInstance from '@/utils/axiosInstance';
-
-const API_URL = '/applications'; // Base path for application endpoints
+import axiosInstance from '../utils/axiosInstance';
 
 /**
- * Submits an application for a specific job.
- * @route POST /api/applications
- * @param {object} applicationData - Application details
- * @param {number} applicationData.jobId - ID of the job being applied for (required)
- * @param {string} applicationData.coverLetter - Cover letter text (optional)
- * @param {string} applicationData.resumeUrl - URL to the resume file (optional)
- * @returns {Promise} Axios response promise with newly created application details
- * @description Creates a new job application. The user must be logged in as a jobseeker.
- * The backend validates if the job exists, is active, and if the user has already applied.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
- * @response {object} application - The created application with related data
- * @response {object} application.jobseeker - Applicant information with user details
- * @response {object} application.job - Job details with employer information and tags
+ * Apply for a job
+ * @param {Object} applicationData - Application data
+ * @param {number} applicationData.jobId - ID of the job being applied for
+ * @param {string} [applicationData.coverLetter] - Cover letter text
+ * @param {string} [applicationData.resumeUrl] - URL to the applicant's resume
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the application was submitted successfully
+ *   - message: {string} - Success or error message
+ *   - application: {Object} - The submitted application with details
+ *     - id: {number} - Application ID
+ *     - jobseekerId: {number} - Job seeker ID
+ *     - userId: {number} - User ID
+ *     - jobId: {number} - Job ID
+ *     - coverLetter: {string} - Cover letter text
+ *     - resumeUrl: {string} - URL to resume
+ *     - status: {string} - Application status (e.g., "Pending")
+ *     - appliedAt: {string} - Application submission date
+ *     - jobseeker_application: {Object} - Job seeker details
+ *     - applicant: {Object} - Applicant user details
+ *     - job: {Object} - Job details including employer information
  */
-export const applyForJob = (applicationData) => {
-    // Auth token for job seeker role check will be added by interceptor
-    return axiosInstance.post(API_URL, applicationData);
+export const applyForJob = async (applicationData) => {
+  return axiosInstance.post('/applications/create-application', applicationData);
 };
 
 /**
- * Fetches the logged-in job seeker's applications.
- * @route GET /api/applications/me
- * @param {object} params - Query parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=10] - Number of results per page
- * @param {string} [params.status] - Filter by application status (e.g., 'Pending', 'Viewed', 'Interviewing', 'Rejected', 'Hired')
- * @returns {Promise} Axios response promise with paginated list of applications and job details
- * @description Returns all applications submitted by the current jobseeker with pagination support
- * and optional status filtering. Includes job and employer details for each application.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {number} count - Total number of applications matching filters
- * @response {Array} applications - List of application objects with job and employer details
- * @response {object} pagination - Pagination information
- * @response {number} pagination.currentPage - Current page number
- * @response {number} pagination.totalPages - Total number of pages
- * @response {boolean} pagination.hasNextPage - Whether there are more pages
- * @response {boolean} pagination.hasPreviousPage - Whether there are previous pages
- * @response {number} pagination.totalApplications - Total number of applications matching filters
- */
-export const getMyApplications = (params) => {
-    return axiosInstance.get(`${API_URL}/me`, { params });
-};
-
-/**
- * Fetches applications for a specific job (employer only).
- * @route GET /api/applications/job/:jobId
- * @param {string} jobId - ID of the job to fetch applications for
- * @param {object} params - Query parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=10] - Number of results per page
+ * Get all applications for the current job seeker
+ * @param {Object} [params] - Query parameters
+ * @param {number} [params.page] - Page number for pagination
+ * @param {number} [params.limit] - Number of items per page
  * @param {string} [params.status] - Filter by application status
- * @returns {Promise} Axios response promise with paginated list of applications with applicant details
- * @description Returns all applications for a specific job posting. The user must be logged in as the employer
- * who posted the job. Includes jobseeker details for each application.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {number} count - Total number of applications matching filters
- * @response {Array} applications - List of application objects with applicant details
- * @response {object} pagination - Pagination information
- * @response {number} pagination.currentPage - Current page number
- * @response {number} pagination.totalPages - Total number of pages
- * @response {boolean} pagination.hasNextPage - Whether there are more pages
- * @response {boolean} pagination.hasPreviousPage - Whether there are previous pages
- * @response {number} pagination.totalApplications - Total number of applications matching filters
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - count: {number} - Total number of applications (after filtering)
+ *   - applications: {Array<Object>} - List of applications
+ *     - id: {number} - Application ID
+ *     - status: {string} - Application status
+ *     - appliedAt: {string} - Application date
+ *     - job: {Object} - Job details
+ *       - id: {number} - Job ID
+ *       - title: {string} - Job title
+ *       - description: {string} - Job description
+ *       - employer: {Object} - Employer details
+ *   - pagination: {Object} - Pagination details
+ *     - currentPage: {number} - Current page
+ *     - totalPages: {number} - Total number of pages
+ *     - hasNextPage: {boolean} - Whether there is a next page
+ *     - hasPreviousPage: {boolean} - Whether there is a previous page
+ *     - totalApplications: {number} - Total number of applications
  */
-export const getApplicationsForJob = (jobId, params) => {
-    return axiosInstance.get(`${API_URL}/job/${jobId}`, { params });
+export const getMyApplications = async (params = {}) => {
+  return axiosInstance.post('/applications/get-my-applications', params);
 };
 
 /**
- * Fetches details for a specific application.
- * @route GET /api/applications/:id
- * @param {string|number} applicationId - ID of the application to fetch
- * @returns {Promise} Axios response promise with detailed application information
- * @description Returns detailed information about a specific application. Access is restricted to
- * the jobseeker who submitted the application or the employer who owns the job.
- * When an employer views a 'Pending' application, its status is automatically updated to 'Viewed'.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {object} application - Detailed application information with related data
- * @response {object} application.jobseeker - Applicant information with user details
- * @response {object} application.job - Job details with employer information and tags
- */
-export const getApplicationById = (applicationId) => {
-    return axiosInstance.get(`${API_URL}/${applicationId}`);
-};
-
-/**
- * Updates the status of a specific application (employer only).
- * @route PUT /api/applications/:id/status
- * @param {string} applicationId - ID of the application to update
- * @param {object} statusData - Data containing the new status
- * @param {string} statusData.status - New application status (e.g., 'Interviewing', 'Rejected', 'Hired')
- * @returns {Promise} Axios response promise with updated application details
- * @description Updates the status of a job application. The user must be logged in as the employer
- * who owns the job. This triggers notifications to the applicant.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
- * @response {object} application - Updated application with related data
- */
-export const updateApplicationStatus = (applicationId, statusData) => {
-    return axiosInstance.put(`${API_URL}/${applicationId}/status`, statusData);
-};
-
-/**
- * Fetches applications for a specific job with advanced filtering (employer only).
- * @route GET /api/applications/job/:jobId/filtered
- * @param {string|number} jobId - ID of the job to fetch applications for
- * @param {object} params - Filter and pagination parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=10] - Number of results per page
+ * Get applications for a specific job (employer only)
+ * @param {string} jobId - ID of the job
+ * @param {Object} [params] - Query parameters
+ * @param {number} [params.page] - Page number for pagination
+ * @param {number} [params.limit] - Number of items per page
  * @param {string} [params.status] - Filter by application status
- * @param {string} [params.appliedAfter] - Filter applications after this date (ISO format)
- * @param {string} [params.appliedBefore] - Filter applications before this date (ISO format)
- * @param {number} [params.experience_min] - Minimum years of experience
- * @param {number} [params.experience_max] - Maximum years of experience
- * @param {string} [params.education_level] - Filter by education level
- * @param {string} [params.skills] - Comma-separated list of required skills
- * @param {string} [params.search] - Search term for applicant name or email
- * @param {string} [params.sortBy] - Field to sort by (appliedAt, name, status, experience, education)
- * @param {string} [params.sortDirection] - Sort direction (asc, desc)
- * @returns {Promise} Axios response promise with filtered applications
- * @description Returns applications for a job with advanced filtering options. The user must be logged in
- * as the employer who posted the job. Includes comprehensive applicant details.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {number} count - Total number of applications matching filters
- * @response {Array} applications - List of filtered application objects with detailed applicant info
- * @response {object} pagination - Pagination information
- * @response {object} filters - Applied filter criteria
- * @response {object} sorting - Applied sorting criteria
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - count: {number} - Total number of applications
+ *   - applications: {Array<Object>} - List of applications
+ *     - id: {number} - Application ID
+ *     - status: {string} - Application status
+ *     - appliedAt: {string} - Application date
+ *     - jobseeker_application: {Object} - Job seeker details
+ *       - id: {number} - Job seeker ID
+ *       - user_jobseeker: {Object} - User details
+ *       - my_educations: {Array<Object>} - Educational background
+ *       - experiences: {Array<Object>} - Work experience
+ *   - pagination: {Object} - Pagination details
+ *     - currentPage: {number} - Current page
+ *     - totalPages: {number} - Total number of pages
+ *     - hasNextPage: {boolean} - Whether there is a next page
+ *     - hasPreviousPage: {boolean} - Whether there is a previous page
+ *     - totalApplications: {number} - Total number of applications
  */
-export const getFilteredApplicationsForJob = (jobId, params) => {
-    return axiosInstance.get(`${API_URL}/job/${jobId}/filtered`, { params });
+export const getApplicationsByJob = async (jobId, params = {}) => {
+  return axiosInstance.post(`/applications/get-by-job/${jobId}`, params);
 };
 
 /**
- * Fetches application statistics for a specific job (employer only).
- * @route GET /api/applications/job/:jobId/stats
- * @param {string|number} jobId - ID of the job to fetch statistics for
- * @returns {Promise} Axios response promise with application statistics
- * @description Returns statistical information about applications for a specific job.
- * The user must be logged in as the employer who posted the job.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {object} statistics - Application statistics
- * @response {number} statistics.totalApplications - Total number of applications
- * @response {object} statistics.byStatus - Count of applications by status
- * @response {object} statistics.byDate - Applications received by date (last 30 days)
- * @response {Array} statistics.topSkills - Top 10 skills among applicants
+ * Get filtered applications for a specific job (employer only)
+ * @param {string} jobId - ID of the job
+ * @param {Object} [filters] - Filter parameters
+ * @param {number} [filters.page] - Page number for pagination
+ * @param {number} [filters.limit] - Number of items per page
+ * @param {string} [filters.status] - Filter by application status
+ * @param {string} [filters.appliedAfter] - Filter by date applied after
+ * @param {string} [filters.appliedBefore] - Filter by date applied before
+ * @param {number} [filters.experience_min] - Filter by minimum experience
+ * @param {number} [filters.experience_max] - Filter by maximum experience
+ * @param {string} [filters.education_level] - Filter by education level
+ * @param {Array<string>} [filters.skills] - Filter by skills
+ * @param {string} [filters.search] - Search term for applicant name/details
+ * @param {string} [filters.sortBy] - Field to sort by
+ * @param {string} [filters.sortOrder] - Order to sort (asc/desc)
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - count: {number} - Total number of applications matching filters
+ *   - applications: {Array<Object>} - List of filtered applications
+ *   - pagination: {Object} - Pagination details
+ *     - currentPage: {number} - Current page
+ *     - totalPages: {number} - Total number of pages
+ *     - hasNextPage: {boolean} - Whether there is a next page
+ *     - hasPreviousPage: {boolean} - Whether there is a previous page
+ *     - totalItems: {number} - Total number of applications matching filters
  */
-export const getApplicationStats = (jobId) => {
-    return axiosInstance.get(`${API_URL}/job/${jobId}/stats`);
+export const getFilteredApplicationsByJob = async (jobId, filters = {}) => {
+  return axiosInstance.post(`/applications/get-filtered-by-job/${jobId}`, filters);
 };
 
 /**
- * Batch updates multiple application statuses (employer only).
- * @route PUT /api/applications/batch-update
- * @param {object} batchData - Batch update data
- * @param {Array} batchData.applications - Array of application objects to update
- * @param {string|number} batchData.applications[].id - Application ID
- * @param {string} batchData.applications[].status - New status for this application
- * @returns {Promise} Axios response promise with batch update results
- * @description Updates the status of multiple applications in a single request.
- * The user must be logged in as the employer who owns all the jobs.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message with count of updated applications
- * @response {Array} applications - List of updated application objects with related data
+ * Get statistics for applications to a specific job
+ * @param {string} jobId - ID of the job
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - statistics: {Object} - Application statistics
+ *     - totalApplications: {number} - Total number of applications
+ *     - byStatus: {Object} - Applications count by status
+ *       - Pending: {number} - Number of pending applications
+ *       - Viewed: {number} - Number of viewed applications
+ *       - Shortlisted: {number} - Number of shortlisted applications
+ *       - Rejected: {number} - Number of rejected applications
+ *     - byDate: {Object} - Applications count by date (last 30 days)
+ *     - topSkills: {Array<Object>} - Top skills among applicants
+ *       - name: {string} - Skill name
+ *       - count: {number} - Number of applicants with this skill
  */
-export const batchUpdateApplicationStatus = (batchData) => {
-    return axiosInstance.put(`${API_URL}/batch-update`, batchData);
+export const getApplicationStatsByJob = async (jobId) => {
+  return axiosInstance.post(`/applications/get-stats-by-job/${jobId}`);
 };
 
-// Add other application-related functions here (e.g., withdrawApplication) 
+/**
+ * Get a specific application by ID
+ * @param {string} applicationId - ID of the application
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - application: {Object} - Complete application details
+ *     - id: {number} - Application ID
+ *     - jobseekerId: {number} - Job seeker ID
+ *     - userId: {number} - User ID
+ *     - jobId: {number} - Job ID
+ *     - coverLetter: {string} - Cover letter text
+ *     - resumeUrl: {string} - URL to resume
+ *     - status: {string} - Application status (e.g., "Pending", "Viewed")
+ *     - appliedAt: {string} - Application submission date
+ *     - jobseeker_application: {Object} - Job seeker profile details
+ *     - applicant: {Object} - Applicant user details
+ *       - id: {number} - User ID
+ *       - name: {string} - User's name
+ *       - email: {string} - User's email
+ *       - avatarUrl: {string} - User's avatar URL
+ *     - job: {Object} - Job details including employer information
+ * 
+ * Note: When an employer views an application with "Pending" status,
+ * the status will automatically be updated to "Viewed".
+ */
+export const getApplicationById = async (applicationId) => {
+  return axiosInstance.post(`/applications/get-by-id/${applicationId}`);
+};
+
+/**
+ * Update the status of an application (employer only)
+ * @param {string} applicationId - ID of the application
+ * @param {Object} updateData - Update data
+ * @param {string} updateData.status - New application status
+ * @param {Object} [updateData.interviewDetails] - Interview details if status is "Shortlisted"
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the update was successful
+ *   - message: {string} - Success or error message
+ *   - application: {Object} - The updated application with details
+ *   - interview: {Object|null} - Interview details if an interview was scheduled
+ */
+export const updateApplicationStatus = async (applicationId, updateData) => {
+  return axiosInstance.post(`/applications/update-status/${applicationId}`, updateData);
+};
+
+/**
+ * Update the status of multiple applications in batch (employer only)
+ * @param {Object} batchData - Batch update data
+ * @param {Array<Object>} batchData.applications - Applications to update
+ * @param {string} batchData.applications[].id - ID of the application
+ * @param {string} batchData.applications[].status - New status for the application
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the update was successful
+ *   - message: {string} - Success message including number of applications updated
+ *   - applications: {Array<Object>} - Array of updated applications with details
+ */
+export const batchUpdateApplicationStatus = async (batchData) => {
+  return axiosInstance.post('/applications/batch-update-status', batchData);
+};
+
+/**
+ * Withdraw a job application (job seeker only)
+ * @param {string} applicationId - ID of the application
+ * @param {Object} [withdrawData] - Withdrawal data
+ * @param {string} [withdrawData.reason] - Reason for withdrawal
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the withdrawal was successful
+ *   - message: {string} - Success or error message
+ *   - applicationId: {string} - ID of the withdrawn application
+ *   - reason: {string} - Withdrawal reason or "No reason provided"
+ */
+export const withdrawApplication = async (applicationId, withdrawData = {}) => {
+  return axiosInstance.post(`/applications/withdraw/${applicationId}`, withdrawData);
+}; 

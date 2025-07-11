@@ -15,7 +15,7 @@ export default function AuthLayout({ children }) {
       </div>
 
       {/* Right side - Image and info */}
-      <div className="hidden bg-blue-600 md:flex w-full md:flex-col md:items-center md:justify-center md:pb-12 h-full">
+      <div className="hidden bg-blue-600 md:flex w-full md:flex-col md:items-center md:pt-6 md:pb-12 h-full">
         <div className="w-full max-w-md px-4 text-white">
           <div className="mb-10 text-center">
             <h2 className="text-3xl font-bold">Welcome to HireLyft</h2>

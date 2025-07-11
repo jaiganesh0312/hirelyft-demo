@@ -8,11 +8,11 @@ import {
   CardHeader,
   CardBody,
   CardFooter,
-  Link,
   Spinner,
   InputOtp,
   addToast
 } from "@heroui/react";
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { resendOtp, verifyEmail } from "@/services/authService";
 import { useForm } from "react-hook-form";
@@ -109,7 +109,7 @@ function VerifyEmailNoticeContent() {
       addToast({
         title: "Error!",
         description: "Verification failed!",
-        color: "success",
+        color: "danger",
       });
       setError(
         err.response?.data?.message ||

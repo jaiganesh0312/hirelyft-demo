@@ -6,7 +6,6 @@ import Sidebar from '@/components/Sidebar';
 
 
 const inter = Inter({ subsets: ['latin'] });
-
 export const metadata = {
   title: 'HireLyft - Job Portal',
   description: 'Connect job seekers and employers with our modern job portal platform',

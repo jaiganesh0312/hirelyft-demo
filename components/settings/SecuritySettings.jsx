@@ -1,7 +1,7 @@
 "use client";
 
 import React from 'react';
-import { Card, CardBody, CardHeader, Divider, Tabs, Tab } from "@heroui/react";
+import { Card, CardBody, CardHeader, Divider, Tabs, Tab, } from "@heroui/react";
 import { Icon } from '@iconify/react';
 import TwoFactorAuth from './TwoFactorAuth';
 import UpdatePasswordForm from './UpdatePasswordForm';

@@ -1,228 +1,266 @@
-import axiosInstance from '@/utils/axiosInstance';
-
-const API_URL = '/auth'; // Base path for auth endpoints
+import axiosInstance from '../utils/axiosInstance';
 
 /**
  * Register a new user
- * @route POST /api/auth/register
  * @param {Object} userData - User registration data
  * @param {string} userData.name - User's full name
  * @param {string} userData.email - User's email address
  * @param {string} userData.phone_number - User's phone number
  * @param {string} userData.password - User's password
- * @param {string} userData.role - User role ('jobseeker' or 'employer')
- * @param {string} [userData.company_name] - Company name (required if role is 'employer')
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if registration was successful
- * @response {string} message - Success/error message
- * @response {Object} user - User data (id, name, email, role, isEmailVerified, is2FAEnabled, avatarUrl)
- * @description Creates a new user account and sends a verification email with OTP.
+ * @param {string} userData.role - User's role (jobseeker/employer)
+ * @param {File} [avatar] - Optional avatar file
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the registration was successful
+ *   - message: {string} - Success or error message
+ *   - user: {Object} - User data if registration was successful
+ *     - id: {number} - User ID
+ *     - name: {string} - User's name
+ *     - email: {string} - User's email
+ *     - role: {string} - User's role
+ *     - isEmailVerified: {boolean} - Email verification status
+ *     - is2FAEnabled: {boolean} - Two-factor authentication status
+ *     - avatarUrl: {string|null} - URL to the user's avatar if uploaded
+ *   - avatarBlob: {string|null} - Base64 encoded avatar image if provided
  */
-export const registerUser = (userData) => {
-  return axiosInstance.post(`${API_URL}/register`, userData);
+export const registerUser = async (userData, avatar = null) => {
+  return axiosInstance.post('/auth/register', userData);
 };
 
 /**
- * Login user
- * @route POST /api/auth/login
+ * Login user with email and password
  * @param {Object} credentials - Login credentials
- * @param {string} credentials.email - User's email address
+ * @param {string} credentials.email - User's email
  * @param {string} credentials.password - User's password
- * @param {string} [credentials.totpToken] - 2FA token (required if 2FA is enabled)
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if login was successful
- * @response {string} message - Success/error message
- * @response {string} token - JWT access token
- * @response {string} refreshToken - JWT refresh token
- * @response {Object} user - User data (id, name, email, role, isEmailVerified, is2FAEnabled, avatarUrl)
- * @response {boolean} [require2FA] - Indicates if 2FA code is required (if 2FA is enabled)
- * @description Authenticates user credentials and returns tokens for authenticated requests.
+ * @param {string} [credentials.totpToken] - TOTP token for 2FA if enabled
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the login was successful
+ *   - message: {string} - Success or error message
+ *   - token: {string} - JWT authentication token
+ *   - refreshToken: {string} - JWT refresh token for obtaining new auth tokens
+ *   - csrfToken: {string} - CSRF protection token
+ *   - user: {Object} - Logged in user data
+ *     - id: {number} - User ID
+ *     - name: {string} - User's name
+ *     - email: {string} - User's email
+ *     - role: {string} - User's role (jobseeker/employer)
+ *     - isEmailVerified: {boolean} - Email verification status
+ *     - is2FAEnabled: {boolean} - Two-factor authentication status
+ *     - avatarUrl: {string|null} - URL to the user's avatar
+ *   - avatarBlob: {string|null} - Base64 encoded avatar image if available
  */
-export const loginUser = (credentials) => {
-  return axiosInstance.post(`${API_URL}/login`, credentials);
+export const loginUser = async (credentials) => {
+  return axiosInstance.post('/auth/login', credentials);
+};
+
+/**
+ * Request OTP for passwordless login
+ * @param {string} email - User's email
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Always true regardless of whether email exists (for security)
+ *   - message: {string} - Generic message indicating OTP was sent if email exists
+ *   
+ * Note: The API intentionally returns a generic message even if the email
+ * doesn't exist in the system to prevent user enumeration attacks.
+ */
+export const requestOTP = async (email) => {
+  return axiosInstance.post('/auth/request-otp', { email });
+};
+
+/**
+ * Verify OTP for login
+ * @param {Object} params - OTP verification parameters
+ * @param {string} params.email - User's email
+ * @param {string} params.otp - OTP code
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if OTP verification was successful
+ *   - message: {string} - Success or error message
+ *   - token: {string} - JWT authentication token if successful
+ *   - refreshToken: {string} - JWT refresh token if successful
+ *   - user: {Object} - User data if verification was successful
+ *     - id: {number} - User ID
+ *     - name: {string} - User's name
+ *     - email: {string} - User's email
+ *     - role: {string} - User's role
+ *     - isEmailVerified: {boolean} - Email verification status
+ *     - is2FAEnabled: {boolean} - Two-factor authentication status
+ *     - avatarUrl: {string|null} - URL to the user's avatar
+ *   - avatarBlob: {string|null} - Base64 encoded avatar image if available
+ */
+export const verifyOTP = async (params) => {
+  return axiosInstance.post('/auth/verify-otp', params);
 };
 
 /**
  * Logout user
- * @route POST /api/auth/logout
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if logout was successful
- * @response {string} message - Success/error message
- * @description Logs out the current user and updates their login status.
- * Requires authentication token in the header.
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if logout was successful
+ *   - message: {string} - Success or error message
+ * 
+ * Note: This will invalidate the user's session on the server side.
+ * Client-side tokens should be removed after receiving a successful response.
  */
-export const logoutUser = () => {
-  // Retrieve token from localStorage to send in header (handled by interceptor)
-  return axiosInstance.post(`${API_URL}/logout`);
+export const logoutUser = async () => {
+  return axiosInstance.post('/auth/logout');
 };
 
 /**
- * Verify email with OTP
- * @route POST /api/auth/verify-email
- * @param {Object} data - Verification data
- * @param {string} data.email - User's email address
- * @param {string} data.otp - One-time password sent to email
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if verification was successful
- * @response {string} message - Success/error message
- * @response {string} token - JWT access token
- * @response {string} refreshToken - JWT refresh token
- * @response {Object} user - User data (id, name, email, role, isEmailVerified, is2FAEnabled, avatarUrl)
- * @description Verifies a user's email using the OTP sent during registration.
- * If successful, user is marked as verified and logged in.
+ * Verify user's email with OTP
+ * @param {Object} params - Email verification parameters
+ * @param {string} params.email - User's email
+ * @param {string} params.otp - OTP code for verification
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if email verification was successful
+ *   - message: {string} - Success or error message
+ *   - token: {string} - JWT authentication token if successful
+ *   - refreshToken: {string} - JWT refresh token if successful
+ *   - csrfToken: {string} - CSRF protection token if successful
+ *   - user: {Object} - User data with updated verification status
+ *     - id: {number} - User ID
+ *     - name: {string} - User's name
+ *     - email: {string} - User's email
+ *     - role: {string} - User's role
+ *     - isEmailVerified: {boolean} - Will be true if verification successful
+ *     - is2FAEnabled: {boolean} - Two-factor authentication status
+ *     - avatarUrl: {string|null} - URL to the user's avatar
+ *   - avatarBlob: {string|null} - Base64 encoded avatar image if available
  */
-export const verifyEmail = (data) => {
-  return axiosInstance.post(`${API_URL}/verify-email`, data);
+export const verifyEmail = async (params) => {
+  return axiosInstance.post('/auth/verify-email', params);
 };
 
 /**
  * Resend verification OTP
- * @route POST /api/auth/resend-otp
- * @param {Object} data - Request data
- * @param {string} data.email - User's email address
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if OTP was sent successfully
- * @response {string} message - Success/error message
- * @description Generates a new OTP and sends it to the user's email for verification.
+ * @param {string} email - User's email
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Always true regardless of whether email exists (for security)
+ *   - message: {string} - Generic message indicating OTP was sent if email exists
+ * 
+ * Note: The API intentionally returns a success response even if the email
+ * doesn't exist in the system to prevent user enumeration attacks.
  */
-export const resendOtp = (data) => {
-  return axiosInstance.post(`${API_URL}/resend-otp`, data);
+export const resendOtp = async (email) => {
+  return axiosInstance.post('/auth/resend-otp', { email });
 };
 
 /**
- * Forgot password
- * @route POST /api/auth/forgot-password
- * @param {Object} data - Request data
- * @param {string} data.email - User's email address
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if password reset email was sent
- * @response {string} message - Success/error message
- * @description Generates a password reset token and sends a reset link to the user's email.
+ * Initialize 2FA setup
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if 2FA initialization was successful
+ *   - message: {string} - Success or error message
+ *   - secret: {string} - Base32-encoded secret key for TOTP setup
+ *   - qrCode: {string} - Data URL containing QR code image to scan with authenticator app
+ * 
+ * Note: The returned secret should be stored temporarily until the user
+ * confirms 2FA setup by validating a TOTP code.
  */
-export const forgotPassword = (data) => {
-  return axiosInstance.post(`${API_URL}/forgot-password`, data);
+export const initialize2FA = async () => {
+  return axiosInstance.post('/auth/initialize-2fa');
 };
 
 /**
- * Reset password
- * @route POST /api/auth/reset-password
- * @param {Object} data - Reset password data
- * @param {string} data.token - Reset token from email link
- * @param {string} data.password - New password
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if password reset was successful
- * @response {string} message - Success/error message
- * @description Resets a user's password using the token sent via email.
- * Token is valid for 10 minutes.
+ * Enable 2FA for user
+ * @param {string} totpToken - TOTP token from authenticator app
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if 2FA was enabled successfully
+ *   - message: {string} - Success or error message
+ * 
+ * Note: This confirms the 2FA setup after initialization. The user must provide
+ * a valid token from their authenticator app to verify proper setup.
  */
-export const resetPassword = (data) => {
-  return axiosInstance.post(`${API_URL}/reset-password`, data);
+export const enable2FA = async (totpToken) => {
+  return axiosInstance.post('/auth/enable-2fa', { token: totpToken });
 };
 
 /**
- * Update password
- * @route PUT /api/auth/update-password
- * @param {Object} data - Update password data
- * @param {string} data.currentPassword - Current password
- * @param {string} data.password - New password
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if password update was successful
- * @response {string} message - Success/error message
- * @description Updates the password for the authenticated user.
- * Requires authentication token in the header.
+ * Disable 2FA for user
+ * @param {string} totpToken - TOTP token from authenticator app
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if 2FA was disabled successfully
+ *   - message: {string} - Success or error message
+ * 
+ * Note: This requires verification with a valid token to ensure the request
+ * is made by the account owner, not by someone who gained access to their session.
  */
-export const updatePassword = (data) => {
-  return axiosInstance.put(`${API_URL}/update-password`, data);
+export const disable2FA = async (totpToken) => {
+  return axiosInstance.post('/auth/disable-2fa', { token: totpToken });
 };
 
 /**
- * Request OTP for login
- * @route POST /api/auth/request-otp
- * @param {Object} data - Request data
- * @param {string} data.email - User's email address
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if OTP was sent successfully
- * @response {string} message - Success/error message
- * @description Generates an OTP and sends it to the user's email for passwordless login.
+ * Request password reset
+ * @param {string} email - User's email
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Always true regardless of whether email exists (for security)
+ *   - message: {string} - Generic message indicating reset email was sent if email exists
+ * 
+ * Note: The API intentionally returns a success response even if the email
+ * doesn't exist in the system to prevent user enumeration attacks.
+ * A password reset link will be sent to the email if it exists in the database.
  */
-export const requestOtpLogin = (data) => {
-  return axiosInstance.post(`${API_URL}/request-otp`, data);
+export const forgotPassword = async (email) => {
+  return axiosInstance.post('/auth/forgot-password', { email });
 };
 
 /**
- * Verify OTP and login
- * @route POST /api/auth/verify-otp
- * @param {Object} data - Verification data
- * @param {string} data.email - User's email address
- * @param {string} data.otp - One-time password sent to email
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if verification was successful
- * @response {string} message - Success/error message
- * @response {string} token - JWT access token
- * @response {string} refreshToken - JWT refresh token
- * @response {Object} user - User data (id, name, email, role, isEmailVerified, is2FAEnabled, avatarUrl)
- * @description Verifies OTP for passwordless login and returns authentication tokens.
+ * Reset password using token
+ * @param {Object} params - Password reset parameters
+ * @param {string} params.token - Reset token from email
+ * @param {string} params.password - New password
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if password reset was successful
+ *   - message: {string} - Success or error message
+ * 
+ * Note: This endpoint verifies the reset token received via email
+ * and updates the user's password if the token is valid and not expired.
  */
-export const verifyOtpLogin = (data) => {
-  return axiosInstance.post(`${API_URL}/verify-otp`, data);
+export const resetPassword = async (params) => {
+  return axiosInstance.post('/auth/reset-password', params);
 };
 
 /**
- * Initialize two-factor authentication
- * @route POST /api/auth/initialize-2fa
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if 2FA initialization was successful
- * @response {string} message - Success/error message
- * @response {string} secret - 2FA secret key (base32 encoded)
- * @response {string} qrCode - QR code data URL for scanning with authenticator app
- * @description Initializes 2FA for the authenticated user by generating a secret key.
- * Requires authentication token in the header.
+ * Update password (requires authentication)
+ * @param {Object} params - Password update parameters
+ * @param {string} params.currentPassword - Current password
+ * @param {string} params.password - New password
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if password update was successful
+ *   - message: {string} - Success or error message
+ * 
+ * Note: This endpoint requires the user to be authenticated and
+ * verify their current password before allowing a password change.
+ * This is different from the reset password flow, which is for users
+ * who cannot access their account.
  */
-export const initialize2FA = () => {
-  return axiosInstance.post(`${API_URL}/initialize-2fa`);
+export const updatePassword = async (params) => {
+  return axiosInstance.post('/auth/update-password', params);
 };
 
 /**
- * Enable two-factor authentication
- * @route POST /api/auth/enable-2fa
- * @param {Object} data - Verification data
- * @param {string} data.token - TOTP code from authenticator app
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if 2FA was enabled successfully
- * @response {string} message - Success/error message
- * @description Enables 2FA for the authenticated user after verifying the token.
- * Requires authentication token in the header.
+ * Refresh access token using refresh token
+ * @param {string} refreshToken - Refresh token
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if token refresh was successful
+ *   - message: {string} - Success or error message
+ *   - token: {string} - New JWT access token
+ *   - csrfToken: {string} - New CSRF protection token
+ * 
+ * Note: This endpoint is used when the main JWT token expires.
+ * The refresh token has a longer lifetime and can be used to obtain
+ * a new access token without requiring the user to log in again.
  */
-export const enable2FA = (data) => {
-  return axiosInstance.post(`${API_URL}/enable-2fa`, data);
+export const refreshToken = async (refreshToken) => {
+  return axiosInstance.post('/auth/refresh-token', { refreshToken });
 };
 
 /**
- * Disable two-factor authentication
- * @route POST /api/auth/disable-2fa
- * @param {Object} data - Verification data
- * @param {string} data.token - TOTP code from authenticator app
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if 2FA was disabled successfully
- * @response {string} message - Success/error message
- * @description Disables 2FA for the authenticated user after verifying the token.
- * Requires authentication token in the header.
+ * Check auth service health
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the auth service is running properly
+ *   - message: {string} - Service status message
+ *   - timestamp: {string} - ISO timestamp of when the request was processed
+ * 
+ * Note: This is a simple health check endpoint to verify the auth service
+ * is operational and responding to requests.
  */
-export const disable2FA = (data) => {
-  return axiosInstance.post(`${API_URL}/disable-2fa`, data);
-};
-
-/**
- * Refresh token
- * @route POST /api/auth/refresh-token
- * @param {Object} data - Refresh data
- * @param {string} data.refreshToken - JWT refresh token
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if token refresh was successful
- * @response {string} message - Success/error message
- * @response {string} token - New JWT access token
- * @description Generates a new access token using the refresh token.
- */
-export const refreshToken = (data) => {
-  return axiosInstance.post(`${API_URL}/refresh-token`, data);
+export const checkHealth = async () => {
+  return axiosInstance.post('/auth/check-health');
 }; 

@@ -1,191 +1,307 @@
-import axiosInstance from '@/utils/axiosInstance';
-
-const API_URL = '/jobs'; // Base path for job endpoints
+import axiosInstance from '../utils/axiosInstance';
 
 /**
- * Fetches a list of jobs with optional filtering.
- * @route GET /api/jobs
- * @param {object} params - Query parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=10] - Number of results per page
- * @param {string} [params.search] - Search term for title, description, requirements, responsibilities
- * @param {string} [params.location] - Filter by location (city or area)
- * @param {string} [params.job_type] - Filter by job type (e.g., 'Full-time', 'Part-time', 'Contract')
- * @param {string} [params.experience_level] - Filter by experience level (e.g., 'Entry', 'Mid', 'Senior')
- * @param {boolean} [params.is_remote] - Filter by remote status
- * @param {string} [params.tag_ids] - Comma-separated tag IDs to filter by
- * @param {number} [params.salary_min] - Minimum salary filter
- * @param {number} [params.salary_max] - Maximum salary filter
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if request was successful
- * @response {number} count - Total number of jobs matching the filters
- * @response {Array} jobs - Array of job objects with employer and tag information
- * @response {Object} pagination - Pagination metadata (currentPage, totalPages, hasNextPage, hasPreviousPage, totalJobs)
- * @description Returns active job listings with comprehensive filtering options. 
- * Results include employer information and associated tags.
+ * Get all jobs with filtering options
+ * @param {Object} filters - Job search filters
+ * @param {string} [filters.search] - Search term for job title or description
+ * @param {Array<string>} [filters.job_type] - Job types to filter by (e.g., ["full-time", "part-time"])
+ * @param {number} [filters.salary_min] - Minimum salary filter
+ * @param {number} [filters.salary_max] - Maximum salary filter
+ * @param {Array<string>} [filters.experience_level] - Experience levels to filter by
+ * @param {number} [filters.experience_minimum] - Minimum experience in years
+ * @param {Array<string>} [filters.education_level] - Education levels to filter by
+ * @param {boolean} [filters.is_remote] - Filter for remote jobs only
+ * @param {string} [filters.location_city] - City filter
+ * @param {string} [filters.location_area] - Area filter
+ * @param {number} [filters.radius] - Location radius in km (requires location_city or location_area)
+ * @param {Array<string>} [filters.tags] - Tags to filter by
+ * @param {Array<string>} [filters.skills] - Skills to filter by
+ * @param {boolean} [filters.bonus] - Filter for jobs with bonuses
+ * @param {number} [filters.page] - Page number for pagination
+ * @param {number} [filters.limit] - Number of results per page
+ * @param {string} [filters.sortBy] - Sort field
+ * @param {string} [filters.sortOrder] - Sort order ('asc' or 'desc')
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - message: {string} - Success or error message
+ *   - jobs: {Array<Object>} - Array of job listings matching the filters
+ *     - id: {number} - Job ID
+ *     - title: {string} - Job title
+ *     - description: {string} - Job description
+ *     - requirements: {string} - Job requirements
+ *     - responsibilities: {string} - Job responsibilities
+ *     - location_city: {string} - City location
+ *     - location_area: {string} - Area within city
+ *     - openings: {number} - Number of open positions
+ *     - salary_min: {number} - Minimum salary
+ *     - salary_max: {number} - Maximum salary
+ *     - job_type: {string} - Type of job (full-time, part-time, etc.)
+ *     - experience_level: {string} - Required experience level
+ *     - experience_minimum: {number} - Minimum years of experience
+ *     - experience_maximun: {number} - Maximum years of experience
+ *     - education_level: {string} - Required education level
+ *     - deadline: {string} - Application deadline date
+ *     - is_remote: {boolean} - Whether job is remote
+ *     - bonus: {boolean} - Whether job offers a bonus
+ *     - bonusType: {string} - Type of bonus offered
+ *     - maxBonusAmount: {number} - Maximum bonus amount
+ *     - availableOn: {string} - Date job is available
+ *     - skills: {Array<string>} - Required skills
+ *     - employer: {Object} - Employer data
+ *     - tags: {Array<Object>} - Associated tags
+ *     - status: {string} - Job status
+ *     - createdAt: {string} - Creation date
+ *     - updatedAt: {string} - Last update date
+ *   - pagination: {Object} - Pagination details
+ *     - currentPage: {number} - Current page number
+ *     - totalPages: {number} - Total number of pages
+ *     - totalItems: {number} - Total number of jobs matching filters
+ *     - limit: {number} - Items per page
  */
-export const getJobs = (params) => {
-    return axiosInstance.get(API_URL, { params });
+export const getJobs = async (filters = {}) => {
+  return axiosInstance.post('/jobs/get-all-jobs', filters);
 };
 
 /**
- * Fetches details for a single job.
- * @route GET /api/jobs/:id
- * @param {string|number} jobId - The ID of the job to fetch
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if request was successful
- * @response {Object} job - Detailed job information
- * @response {Object} job.employer - Employer details including user info
- * @response {Array} job.tags - Tags associated with the job
- * @response {Array} job.applications - Applications for this job (if accessed by employer)
- * @description Returns detailed information about a specific job, including employer details,
- * tags, and applications (if accessed by the employer who posted the job).
- * Inactive jobs can only be viewed by the employer who posted them.
- */
-export const getJobById = (jobId) => {
-    return axiosInstance.get(`${API_URL}/${jobId}`);
-};
-
-/**
- * Creates a new job posting (Employer only).
- * @route POST /api/jobs
- * @param {object} jobData - Data for the new job
- * @param {string} jobData.title - Job title (required)
- * @param {string} jobData.description - Job description (required)
- * @param {string} [jobData.requirements] - Job requirements
- * @param {string} [jobData.responsibilities] - Job responsibilities
- * @param {string} [jobData.location_city] - City location
- * @param {string} [jobData.location_area] - Area/region location
- * @param {number} [jobData.openings] - Number of openings
+ * Create a new job posting
+ * @param {Object} jobData - Job data
+ * @param {string} jobData.title - Job title
+ * @param {string} jobData.description - Job description
+ * @param {string} jobData.requirements - Job requirements
+ * @param {string} jobData.responsibilities - Job responsibilities
+ * @param {string} jobData.location_city - Job city location
+ * @param {string} [jobData.location_area] - Job area within city
+ * @param {number} jobData.openings - Number of job openings
  * @param {number} [jobData.salary_min] - Minimum salary
  * @param {number} [jobData.salary_max] - Maximum salary
- * @param {string} [jobData.job_type] - Job type (e.g., 'Full-time', 'Part-time')
- * @param {string} [jobData.experience_level] - Experience level required
- * @param {number} [jobData.experience_minimum] - Minimum years of experience
- * @param {number} [jobData.experience_maximun] - Maximum years of experience
- * @param {string} [jobData.education_level] - Required education level
- * @param {string} [jobData.deadline] - Application deadline date
+ * @param {string} jobData.job_type - Job type (e.g., "full-time")
+ * @param {string} jobData.experience_level - Experience level
+ * @param {number} [jobData.experience_minimum] - Minimum required experience in years
+ * @param {number} [jobData.experience_maximun] - Maximum experience in years
+ * @param {string} jobData.education_level - Required education level
+ * @param {string} jobData.deadline - Application deadline
  * @param {boolean} [jobData.is_remote] - Whether job is remote
- * @param {boolean} [jobData.bonus] - Whether job offers bonus
+ * @param {boolean} [jobData.bonus] - Whether job offers a bonus
  * @param {string} [jobData.bonusType] - Type of bonus offered
  * @param {number} [jobData.maxBonusAmount] - Maximum bonus amount
- * @param {string} [jobData.availableOn] - Availability date
- * @param {string} [jobData.skills] - Required skills (comma-separated)
+ * @param {string} [jobData.availableOn] - Date when job is available
+ * @param {Array<string>} [jobData.skills] - Required skills
  * @param {string} [jobData.contact_person_name] - Contact person name
  * @param {string} [jobData.contact_number] - Contact phone number
  * @param {string} [jobData.contact_email] - Contact email
- * @param {Array} [jobData.tags] - Array of tag objects with id or name properties
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if job creation was successful
- * @response {string} message - Success/error message
- * @response {Object} job - Created job details with employer and tag information
- * @description Creates a new job posting. The user must be logged in as an employer.
- * Tags can be specified by either ID (existing tags) or name (creates new tags if needed).
+ * @param {Array<Object>} [jobData.tags] - Job tags
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the job was created successfully
+ *   - message: {string} - Success or error message
+ *   - job: {Object} - The created job with full details
+ *     - id: {number} - Job ID
+ *     - title: {string} - Job title
+ *     - description: {string} - Job description
+ *     - requirements: {string} - Job requirements
+ *     - responsibilities: {string} - Job responsibilities
+ *     - location_city: {string} - City location
+ *     - location_area: {string} - Area within city
+ *     - openings: {number} - Number of open positions
+ *     - salary_min: {number} - Minimum salary
+ *     - salary_max: {number} - Maximum salary
+ *     - job_type: {string} - Type of job
+ *     - experience_level: {string} - Required experience level
+ *     - experience_minimum: {number} - Minimum years of experience
+ *     - experience_maximun: {number} - Maximum years of experience
+ *     - education_level: {string} - Required education level
+ *     - deadline: {string} - Application deadline date
+ *     - is_remote: {boolean} - Whether job is remote
+ *     - bonus: {boolean} - Whether job offers a bonus
+ *     - bonusType: {string} - Type of bonus offered
+ *     - maxBonusAmount: {number} - Maximum bonus amount
+ *     - availableOn: {string} - Date job is available
+ *     - skills: {Array<string>} - Required skills
+ *     - employer: {Object} - Employer data
+ *     - tags: {Array<Object>} - Associated tags
+ *     - status: {string} - Job status
+ *     - createdAt: {string} - Creation date
+ *     - updatedAt: {string} - Last update date
  */
-export const postJob = (jobData) => {
-    // Auth token for employer role check will be added by interceptor
-    return axiosInstance.post(API_URL, jobData);
+export const createJob = async (jobData) => {
+  return axiosInstance.post('/jobs/create-job', jobData);
 };
 
 /**
- * Fetches jobs posted by the currently logged-in employer.
- * @route GET /api/jobs/employer/all
- * @param {object} params - Query parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=10] - Number of results per page
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if request was successful
- * @response {number} count - Total number of jobs posted by the employer
- * @response {Array} jobs - Array of job objects with tags and application counts
- * @response {Object} pagination - Pagination metadata (currentPage, totalPages, hasNextPage, hasPreviousPage, totalJobs)
- * @description Returns all jobs posted by the current employer, including inactive ones.
- * Each job includes the count of applications received.
- * Requires authentication token in the header with employer role.
+ * Get jobs posted by the authenticated employer
+ * @param {Object} [params] - Optional parameters
+ * @param {string} [params.status] - Filter by job status ('active', 'inactive', 'expired', 'all')
+ * @param {number} [params.page] - Page number for pagination
+ * @param {number} [params.limit] - Number of results per page
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - message: {string} - Success or error message
+ *   - jobs: {Array<Object>} - Array of job listings posted by the employer
+ *     - id: {number} - Job ID
+ *     - title: {string} - Job title
+ *     - description: {string} - Job description
+ *     - location_city: {string} - City location
+ *     - location_area: {string} - Area within city
+ *     - salary_min: {number} - Minimum salary
+ *     - salary_max: {number} - Maximum salary
+ *     - job_type: {string} - Type of job
+ *     - status: {string} - Job status (active, inactive, expired)
+ *     - createdAt: {string} - Creation date
+ *     - applicationCount: {number} - Number of applications received
+ *     - viewCount: {number} - Number of times the job was viewed
+ *   - pagination: {Object} - Pagination details
+ *     - currentPage: {number} - Current page number
+ *     - totalPages: {number} - Total number of pages
+ *     - totalItems: {number} - Total number of jobs
+ *     - limit: {number} - Items per page
  */
-export const getMyPostedJobs = (params) => {
-    return axiosInstance.get(`${API_URL}/employer/all`, { params });
+export const getEmployerJobs = async (params = {}) => {
+  return axiosInstance.post('/jobs/get-employer-jobs', params);
 };
 
 /**
- * Updates an existing job posting (Employer only).
- * @route PUT /api/jobs/:id
- * @param {string|number} jobId - The ID of the job to update
- * @param {object} jobData - The updated job data
- * @param {string} [jobData.title] - Job title
- * @param {string} [jobData.description] - Job description
- * @param {string} [jobData.requirements] - Job requirements
- * @param {string} [jobData.responsibilities] - Job responsibilities
- * @param {string} [jobData.location_city] - City location
- * @param {string} [jobData.location_area] - Area/region location
- * @param {number} [jobData.openings] - Number of openings
- * @param {number} [jobData.salary_min] - Minimum salary
- * @param {number} [jobData.salary_max] - Maximum salary
- * @param {string} [jobData.job_type] - Job type
- * @param {string} [jobData.experience_level] - Experience level required
- * @param {number} [jobData.experience_minimum] - Minimum years of experience
- * @param {number} [jobData.experience_maximun] - Maximum years of experience
- * @param {string} [jobData.education_level] - Required education level
- * @param {string} [jobData.deadline] - Application deadline date
- * @param {boolean} [jobData.is_remote] - Whether job is remote
- * @param {boolean} [jobData.is_active] - Whether the job is active/visible
- * @param {boolean} [jobData.bonus] - Whether job offers bonus
- * @param {string} [jobData.bonusType] - Type of bonus offered
- * @param {number} [jobData.maxBonusAmount] - Maximum bonus amount
- * @param {string} [jobData.availableOn] - Availability date
- * @param {string} [jobData.skills] - Required skills (comma-separated)
- * @param {string} [jobData.contact_person_name] - Contact person name
- * @param {string} [jobData.contact_number] - Contact phone number
- * @param {string} [jobData.contact_email] - Contact email
- * @param {Array} [jobData.tags] - Array of tag objects with id or name properties
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if job update was successful
- * @response {string} message - Success/error message
- * @response {Object} job - Updated job details with employer and tag information
- * @description Updates a job posting. The user must be logged in as the employer who created the job.
- * Only specified fields will be updated.
- * Requires authentication token in the header with employer role.
+ * Get job recommendations for the authenticated job seeker
+ * @param {Object} [filters] - Optional filters
+ * @param {number} [filters.page] - Page number for pagination
+ * @param {number} [filters.limit] - Number of results per page
+ * @param {Array<string>} [filters.job_type] - Job types to filter by
+ * @param {boolean} [filters.is_remote] - Filter for remote jobs only
+ * @param {string} [filters.location_city] - City filter
+ * @param {string} [filters.location_area] - Area filter
+ * @param {number} [filters.radius] - Location radius in km
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - message: {string} - Success or error message
+ *   - jobs: {Array<Object>} - Array of recommended job listings
+ *     - id: {number} - Job ID
+ *     - title: {string} - Job title
+ *     - description: {string} - Job description
+ *     - location_city: {string} - City location
+ *     - location_area: {string} - Area within city
+ *     - salary_min: {number} - Minimum salary
+ *     - salary_max: {number} - Maximum salary
+ *     - job_type: {string} - Type of job
+ *     - status: {string} - Job status
+ *     - is_remote: {boolean} - Whether job is remote
+ *     - matchScore: {number} - Score indicating how well the job matches the job seeker's profile
+ *     - employer: {Object} - Employer data
+ *     - tags: {Array<Object>} - Associated tags
+ *     - createdAt: {string} - Creation date
+ *   - pagination: {Object} - Pagination details
+ *     - currentPage: {number} - Current page number
+ *     - totalPages: {number} - Total number of pages
+ *     - totalItems: {number} - Total number of recommended jobs
+ *     - limit: {number} - Items per page
+ *   - matchInfo: {Object} - Additional matching information
+ *     - skillsMatch: {Array<string>} - Skills that matched
+ *     - locationMatch: {boolean} - Whether location matched
+ *     - experienceMatch: {boolean} - Whether experience matched
  */
-export const updateJob = (jobId, jobData) => {
-    return axiosInstance.put(`${API_URL}/${jobId}`, jobData);
+export const getRecommendedJobs = async (filters = {}) => {
+  return axiosInstance.post('/jobs/get-recommended-jobs', filters);
 };
 
 /**
- * Deletes a job posting (Employer only).
- * @route DELETE /api/jobs/:id
- * @param {string|number} jobId - The ID of the job to delete
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if job deletion was successful
- * @response {string} message - Success/error message
- * @description Permanently deletes a job posting and all associated applications.
- * The user must be logged in as the employer who created the job.
- * Requires authentication token in the header with employer role.
+ * Update an existing job posting
+ * @param {string} jobId - ID of the job to update
+ * @param {Object} jobData - Updated job data
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the job was updated successfully
+ *   - message: {string} - Success or error message
+ *   - job: {Object} - The updated job with full details
+ *     - id: {number} - Job ID
+ *     - title: {string} - Job title
+ *     - description: {string} - Job description
+ *     - requirements: {string} - Job requirements
+ *     - responsibilities: {string} - Job responsibilities
+ *     - location_city: {string} - City location
+ *     - location_area: {string} - Area within city
+ *     - openings: {number} - Number of open positions
+ *     - salary_min: {number} - Minimum salary
+ *     - salary_max: {number} - Maximum salary
+ *     - job_type: {string} - Type of job
+ *     - experience_level: {string} - Required experience level
+ *     - experience_minimum: {number} - Minimum years of experience
+ *     - experience_maximun: {number} - Maximum years of experience
+ *     - education_level: {string} - Required education level
+ *     - deadline: {string} - Application deadline date
+ *     - is_remote: {boolean} - Whether job is remote
+ *     - bonus: {boolean} - Whether job offers a bonus
+ *     - updatedAt: {string} - Last update date
+ *     - employer: {Object} - Employer data
+ *     - tags: {Array<Object>} - Associated tags
  */
-export const deleteJob = (jobId) => {
-    return axiosInstance.delete(`${API_URL}/${jobId}`);
+export const updateJob = async (jobId, jobData) => {
+  return axiosInstance.post(`/jobs/update-job/${jobId}`, jobData);
 };
 
 /**
- * Fetches recommended jobs for the current jobseeker.
- * @route GET /api/jobs/recommended
- * @param {object} params - Query parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=10] - Number of results per page
- * @param {string} [params.location] - Override jobseeker's location for filtering
- * @param {boolean} [params.is_remote] - Filter for remote jobs
- * @returns {Promise} Axios response promise
- * @response {boolean} success - Indicates if request was successful
- * @response {number} count - Total number of recommended jobs
- * @response {Array} jobs - Array of job objects with employer, tag information, and match scores
- * @response {boolean} jobs[].applied - Indicates if user has already applied to this job
- * @response {number} jobs[].matchScore - Score indicating how well the job matches user's profile
- * @response {Object} pagination - Pagination metadata (currentPage, totalPages, hasNextPage, hasPreviousPage, totalJobs)
- * @description Returns job recommendations based on the jobseeker's skills, tags, and location.
- * Jobs are scored based on matching tags, skills in job title/description, location, and remote preference.
- * Jobs are sorted by relevance score, with information about whether the user has already applied.
- * Requires authentication token in the header with jobseeker role.
+ * Deactivate (soft delete) a job posting
+ * @param {string} jobId - ID of the job to deactivate
+ * @param {Object} [params] - Optional parameters
+ * @param {string} [params.reason] - Reason for deactivation
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the job was deactivated successfully
+ *   - message: {string} - Success or error message
+ *   - job: {Object} - Basic information about the deactivated job
+ *     - id: {number} - Job ID
+ *     - title: {string} - Job title
+ *     - status: {string} - Updated status (inactive)
+ * 
+ * Note: This performs a soft delete, making the job inactive rather than removing it from the database.
  */
-export const getRecommendedJobs = (params) => {
-    return axiosInstance.get(`${API_URL}/recommended`, { params });
+export const deactivateJob = async (jobId, params = {}) => {
+  return axiosInstance.post(`/jobs/deactivate-job/${jobId}`, params);
 };
 
-// Add other job-related functions here (e.g., updateJob, deleteJob for employers/admins) 
+/**
+ * Get a job by its ID
+ * @param {string} jobId - ID of the job to retrieve
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - message: {string} - Success or error message
+ *   - job: {Object} - The requested job with full details
+ *     - id: {number} - Job ID
+ *     - title: {string} - Job title
+ *     - description: {string} - Job description
+ *     - requirements: {string} - Job requirements
+ *     - responsibilities: {string} - Job responsibilities
+ *     - location_city: {string} - City location
+ *     - location_area: {string} - Area within city
+ *     - openings: {number} - Number of open positions
+ *     - salary_min: {number} - Minimum salary
+ *     - salary_max: {number} - Maximum salary
+ *     - job_type: {string} - Type of job
+ *     - experience_level: {string} - Required experience level
+ *     - experience_minimum: {number} - Minimum years of experience
+ *     - experience_maximun: {number} - Maximum years of experience
+ *     - education_level: {string} - Required education level
+ *     - deadline: {string} - Application deadline date
+ *     - is_remote: {boolean} - Whether job is remote
+ *     - bonus: {boolean} - Whether job offers a bonus
+ *     - bonusType: {string} - Type of bonus offered
+ *     - maxBonusAmount: {number} - Maximum bonus amount
+ *     - availableOn: {string} - Date job is available
+ *     - skills: {Array<string>} - Required skills
+ *     - contact_person_name: {string} - Contact person name
+ *     - contact_number: {string} - Contact phone number
+ *     - contact_email: {string} - Contact email
+ *     - createdAt: {string} - Creation date
+ *     - updatedAt: {string} - Last update date
+ *     - employer: {Object} - Employer information
+ *       - id: {number} - Employer ID
+ *       - company_name: {string} - Company name
+ *       - company_website: {string} - Company website
+ *       - industry: {string} - Industry
+ *       - company_size: {string} - Company size
+ *       - logo: {string} - Company logo URL
+ *     - tags: {Array<Object>} - Associated tags
+ *       - id: {number} - Tag ID
+ *       - name: {string} - Tag name
+ *       - category: {string} - Tag category
+ *     - applicationCount: {number} - Number of applications received
+ *     - viewCount: {number} - Number of times the job was viewed
+ *     - similarJobs: {Array<Object>} - Similar jobs that might interest the viewer
+ */
+export const getJobById = async (jobId) => {
+  return axiosInstance.post(`/jobs/get-job-by-id/${jobId}`);
+}; 

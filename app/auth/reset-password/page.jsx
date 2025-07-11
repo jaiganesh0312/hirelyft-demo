@@ -12,10 +12,10 @@ import {
   CardHeader,
   CardBody,
   CardFooter,
-  Link,
   Spinner,
   addToast
 } from "@heroui/react";
+import Link from "next/link";
 import { Icon } from "@iconify/react";
 import { resetPassword } from "@/services/authService";
 
@@ -36,6 +36,11 @@ function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
+
+  if(!token){
+    router.replace("/auth/forgot-password");
+    return <Spinner label="Loading..." />
+  }
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);

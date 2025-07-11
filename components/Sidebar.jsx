@@ -13,7 +13,6 @@ import {
 } from "@heroui/react";
 import { Icon } from "@iconify/react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {useAuth} from '@/context/AuthContext'
 
 // Define role-specific menu items (as provided in the attached file)
@@ -61,7 +60,7 @@ export const jobseekerMenuItems = [
   {
     key: "messaging",
     label: "Messages",
-    href: "/messaging",
+    href: "/jobseeker/messages",
     icon: "mdi:message-outline",
   },
   {
@@ -107,7 +106,7 @@ export const employerMenuItems = [
   {
     key: "messaging",
     label: "Messages",
-    href: "/messaging",
+    href: "/employer/messages",
     icon: "mdi:message-outline",
   },
   {
@@ -224,6 +223,7 @@ export default function Sidebar() {
             {navItems.map((item) => (
             <ListboxItem
               key={item.key}
+              as={Link}
               href={item.href}
               startContent={
                 <Icon

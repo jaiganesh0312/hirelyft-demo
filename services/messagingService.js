@@ -1,156 +1,308 @@
-import axiosInstance from '@/utils/axiosInstance';
+import axiosInstance from '../utils/axiosInstance';
+import io from 'socket.io-client';
 
-const API_URL = '/messages'; // Base path for messaging endpoints
+let socket = null;
 
 /**
- * Fetches the logged-in user's conversations.
- * @route GET /api/messages/conversations
- * @param {object} [params] - Query parameters
- * @returns {Promise} Axios response promise with list of conversations
- * @description Retrieves all conversations that the current user is part of.
- * Returns conversations with the most recent message first, including information
- * about the other participant, last message, and unread message count.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {Array} conversations - List of conversation objects with:
- * @response {string} conversations[].id - Conversation ID
- * @response {object} conversations[].participant - Other user in the conversation (id, name, email, avatarUrl)
- * @response {object} conversations[].lastMessage - Most recent message in the conversation (if any)
- * @response {number} conversations[].unreadCount - Number of unread messages in this conversation
- * @response {Date} conversations[].updatedAt - When the conversation was last updated
+ * Initialize the socket connection
+ * @param {string} token - Authentication token
+ * @param {Function} onConnect - Callback for connection success
+ * @param {Function} onError - Callback for connection error
+ * @returns {Object} - Socket instance
  */
-export const getConversations = (params) => {
-    return axiosInstance.get(`${API_URL}/conversations`, { params });
+export const initializeSocket = (token, onConnect, onError) => {
+  if (socket) {
+    socket.disconnect();
+  }
+
+  // Create socket connection
+  socket = io(process.env.NEXT_PUBLIC_API_URL || 'https://my-hirelyft-backend-production.up.railway.app', {
+    auth: { token },
+    transports: ['websocket'],
+    reconnection: true,
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
+  });
+
+  // Setup event handlers
+  socket.on('connect', () => {
+    console.log('Socket connected');
+    if (onConnect) onConnect();
+  });
+
+  socket.on('connect_error', (err) => {
+    console.error('Socket connection error:', err);
+    if (onError) onError(err);
+  });
+
+  socket.on('error', (err) => {
+    console.error('Socket error:', err);
+    if (onError) onError(err);
+  });
+
+  return socket;
 };
 
 /**
- * Fetches messages for a specific conversation.
- * @route GET /api/messages/conversations/:conversationId
- * @param {string|number} conversationId - The ID of the conversation
- * @param {object} [params] - Query parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=20] - Number of messages per page
- * @returns {Promise} Axios response promise with paginated list of messages
- * @description Retrieves messages for a specific conversation, with newest messages first.
- * Automatically marks previously unread messages as read when accessed.
- * The user must be a participant in the conversation to access messages.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {Array} messages - List of messages in the conversation
- * @response {number} totalPages - Total number of pages available
- * @response {number} currentPage - Current page number
- * @response {number} totalMessages - Total number of messages in the conversation
+ * Get the current socket instance
+ * @returns {Object|null} - Socket instance or null if not initialized
  */
-export const getMessages = (conversationId, params) => {
-    return axiosInstance.get(`${API_URL}/conversations/${conversationId}`, { params });
+export const getSocket = () => socket;
+
+/**
+ * Disconnect the socket
+ */
+export const disconnectSocket = () => {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
 };
 
 /**
- * Starts a new conversation with a recipient.
- * @route POST /api/messages/conversations
- * @param {object} data - Conversation data
- * @param {string|number} data.recipientId - ID of the user to start conversation with
- * @param {string} [data.initialMessage] - First message to send in the conversation
- * @returns {Promise} Axios response promise with the new conversation details
- * @description Creates a new conversation with another user and optionally sends an initial message.
- * Role-based rules apply: employers can only message jobseekers and vice versa.
- * If a conversation already exists between the users, it will be reused.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {object} conversation - The created or existing conversation
- * @response {string} conversation.id - Conversation ID
- * @response {Date} conversation.createdAt - When the conversation was created
- * @response {string|number} conversation.recipientId - ID of the recipient
- * @response {object} conversation.initialMessage - First message if one was sent
+ * Get all conversations for the current user
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - conversations: {Array<Object>} - List of conversations
+ *     - id: {string} - Conversation ID
+ *     - participant: {Object} - Other participant's information
+ *     - lastMessage: {Object|null} - Last message in the conversation
+ *     - unreadCount: {number} - Number of unread messages
+ *     - updatedAt: {string} - Last update timestamp
  */
-export const startConversation = (data) => {
-    return axiosInstance.post(`${API_URL}/conversations`, data);
+export const getConversations = async () => {
+  return axiosInstance.post('/messages/get-all-conversations');
 };
 
 /**
- * Sends a message in a specific conversation.
- * @route POST /api/messages/conversations/:conversationId/messages
- * @param {string|number} conversationId - The ID of the conversation
- * @param {object} messageData - The message data
- * @param {string} messageData.text - The message text content
- * @param {string} [messageData.attachmentUrl] - URL to an attachment (if any)
- * @param {string} [messageData.attachmentType] - Type of attachment (if any)
- * @returns {Promise} Axios response promise with the sent message details
- * @description Sends a new message in an existing conversation.
- * The user must be a participant in the conversation.
- * Role-based messaging rules apply (employers can't message employers, jobseekers can't message jobseekers).
- * @response {boolean} success - Indicates if the operation was successful
- * @response {object} message - The sent message with full details including:
- * @response {string} message.id - Message ID
- * @response {string} message.text - Message content
- * @response {string} message.conversationId - ID of the conversation
- * @response {string} message.senderId - ID of the sender
- * @response {object} message.sender - Sender information (id, name, avatarUrl)
- * @response {Date} message.createdAt - When the message was sent
- * @response {boolean} message.isRead - Whether the message has been read
- * @response {string} [message.attachmentUrl] - URL to any attachment
- * @response {string} [message.attachmentType] - Type of any attachment
+ * Get messages for a specific conversation
+ * @param {string} conversationId - ID of the conversation
+ * @param {Object} [options] - Options for pagination
+ * @param {number} [options.page=1] - Page number
+ * @param {number} [options.limit=20] - Number of messages per page
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - messages: {Array<Object>} - List of messages
+ *   - totalPages: {number} - Total pages available
+ *   - currentPage: {number} - Current page number
+ *   - totalMessages: {number} - Total number of messages
  */
-export const sendMessage = (conversationId, messageData) => {
-    return axiosInstance.post(`${API_URL}/conversations/${conversationId}/messages`, messageData);
+export const getMessages = async (conversationId, options = {}) => {
+  const { page = 1, limit = 20 } = options;
+  return axiosInstance.post(`/messages/get-conversation-messages/${conversationId}?page=${page}&limit=${limit}`);
 };
 
 /**
- * Deletes a specific message (only owner can delete).
- * @route DELETE /api/messages/:messageId
- * @param {string|number} messageId - The ID of the message
- * @returns {Promise} Axios response promise with success status
- * @description Soft-deletes a message. Only the sender of the message can delete it.
- * The message will be marked as deleted but not physically removed from the database.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
+ * Start a new conversation with another user
+ * @param {Object} conversationData - Conversation data
+ * @param {string} conversationData.recipientId - ID of the user to start a conversation with
+ * @param {string} [conversationData.initialMessage] - Optional initial message text
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if conversation was created successfully
+ *   - conversation: {Object} - Created conversation details
  */
-export const deleteMessage = (messageId) => {
-    return axiosInstance.delete(`${API_URL}/${messageId}`);
+export const startConversation = async (conversationData) => {
+  return axiosInstance.post('/messages/create-conversation', conversationData);
 };
 
 /**
- * Deletes/leaves a conversation.
- * @route DELETE /api/messages/conversations/:conversationId
- * @param {string|number} conversationId - The ID of the conversation
- * @returns {Promise} Axios response promise with success status
- * @description Removes the user from a conversation. If both participants leave,
- * the conversation and its messages will be soft-deleted.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
+ * Send a message in a conversation
+ * @param {string} conversationId - ID of the conversation
+ * @param {Object} messageData - Message data
+ * @param {string} messageData.text - Message text
+ * @param {string} [messageData.attachmentUrl] - URL of an attachment
+ * @param {string} [messageData.attachmentType] - Type of attachment
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if message was sent successfully
+ *   - message: {Object} - Sent message with sender information
  */
-export const deleteConversation = (conversationId) => {
-    return axiosInstance.delete(`${API_URL}/conversations/${conversationId}`);
+export const sendMessage = async (conversationId, messageData) => {
+  return axiosInstance.post(`/messages/send-message/${conversationId}`, messageData);
 };
 
 /**
- * Searches for users to start a conversation with.
- * @route GET /api/messages/users/search
- * @param {object} params - Search parameters
- * @param {string} params.query - Search term (minimum 2 characters)
- * @returns {Promise} Axios response promise with matching users
- * @description Searches for users by name or email that the current user can message.
- * Results are filtered based on role compatibility:
- * - Employers can only message jobseekers
- * - Jobseekers can only message employers
- * - Admins can message anyone
- * @response {boolean} success - Indicates if the operation was successful
- * @response {Array} users - List of matching users
- * @response {string} users[].id - User ID
- * @response {string} users[].name - User's name
- * @response {string} users[].email - User's email
- * @response {string} users[].avatarUrl - User's avatar URL
- * @response {string} users[].role - User's role
+ * Delete a message
+ * @param {string} messageId - ID of the message to delete
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if message was deleted successfully
+ *   - message: {string} - Success message
  */
-export const searchUsers = (params) => {
-    return axiosInstance.get(`${API_URL}/users/search`, { params });
+export const deleteMessage = async (messageId) => {
+  return axiosInstance.post(`/messages/delete-message/${messageId}`);
 };
 
 /**
- * Gets the total unread message count for the user.
- * @returns {Promise} Axios response with unread message count
- * @description Returns the total number of unread messages for the current user.
- * @response {object} data - Response data
- * @response {number} data.count - Number of unread messages
+ * Delete a conversation
+ * @param {string} conversationId - ID of the conversation to delete
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if conversation was deleted successfully
+ *   - message: {string} - Success message
  */
-export const getUnreadMessageCount = () => {
-    // Replace this mock with an actual API call when endpoint is available
-    return {data: {count: 10}};
+export const deleteConversation = async (conversationId) => {
+  return axiosInstance.post(`/messages/delete-conversation/${conversationId}`);
 };
+
+/**
+ * Search for users to message
+ * @param {string} query - Search query (name or email)
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if search was successful
+ *   - users: {Array<Object>} - List of matched users
+ */
+export const searchUsers = async (query) => {
+  return axiosInstance.post(`/messages/search-users?query=${encodeURIComponent(query)}`);
+};
+
+/**
+ * Join a conversation room for real-time messaging
+ * @param {string} conversationId - ID of the conversation to join
+ * @returns {Promise<Object>} - Promise that resolves when joined
+ */
+export const joinConversation = (conversationId) => {
+  return new Promise((resolve, reject) => {
+    if (!socket || !socket.connected) {
+      reject(new Error('Socket is not connected'));
+      return;
+    }
+
+    socket.emit('join_conversation', conversationId);
+    
+    const handleJoined = (data) => {
+      if (data.conversationId === conversationId) {
+        socket.off('joined_conversation', handleJoined);
+        socket.off('error', handleError);
+        resolve(data);
+      }
+    };
+    
+    const handleError = (error) => {
+      socket.off('joined_conversation', handleJoined);
+      socket.off('error', handleError);
+      reject(error);
+    };
+    
+    socket.on('joined_conversation', handleJoined);
+    socket.on('error', handleError);
+  });
+};
+
+/**
+ * Leave a conversation room
+ * @param {string} conversationId - ID of the conversation to leave
+ */
+export const leaveConversation = (conversationId) => {
+  if (socket && socket.connected) {
+    socket.emit('leave_conversation', conversationId);
+  }
+};
+
+/**
+ * Send a real-time message via socket
+ * @param {Object} messageData - Message data
+ * @param {string} messageData.conversationId - ID of the conversation
+ * @param {string} messageData.text - Message text
+ * @param {string} messageData.recipientId - Recipient's user ID
+ * @param {string} [messageData.attachmentUrl] - URL of an attachment
+ * @param {string} [messageData.attachmentType] - Type of attachment
+ * @returns {Promise<Object>} - Promise that resolves with sent message
+ */
+export const sendSocketMessage = (messageData) => {
+  return new Promise((resolve, reject) => {
+    if (!socket || !socket.connected) {
+      reject(new Error('Socket is not connected'));
+      return;
+    }
+
+    socket.emit('send_message', messageData);
+    
+    // Since we don't get a direct response for the specific message, 
+    // we'll set up a listener for the next new message in this conversation
+    const handleNewMessage = (message) => {
+      if (message.conversationId === messageData.conversationId && 
+          message.senderId === socket.user?.id && 
+          message.text === messageData.text) {
+        socket.off('new_message', handleNewMessage);
+        socket.off('error', handleError);
+        resolve(message);
+      }
+    };
+    
+    const handleError = (error) => {
+      socket.off('new_message', handleNewMessage);
+      socket.off('error', handleError);
+      reject(error);
+    };
+    
+    socket.on('new_message', handleNewMessage);
+    socket.on('error', handleError);
+    
+    // Set a timeout in case we don't get a response
+    setTimeout(() => {
+      socket.off('new_message', handleNewMessage);
+      socket.off('error', handleError);
+      resolve({ sent: true });  // Assume it sent anyway after timeout
+    }, 5000);
+  });
+};
+
+/**
+ * Set typing status in a conversation
+ * @param {string} conversationId - ID of the conversation
+ * @param {boolean} isTyping - Whether the user is typing
+ */
+export const setTypingStatus = (conversationId, isTyping) => {
+  if (socket && socket.connected) {
+    socket.emit('typing', { conversationId, isTyping });
+  }
+};
+
+/**
+ * Mark messages as read
+ * @param {string} conversationId - ID of the conversation
+ * @param {string} [messageId] - Specific message ID (optional)
+ */
+export const markAsRead = (conversationId, messageId = null) => {
+  if (socket && socket.connected) {
+    socket.emit('mark_read', { conversationId, messageId });
+  }
+};
+
+/**
+ * Delete a message via socket
+ * @param {string} messageId - ID of the message to delete
+ * @returns {Promise<Object>} - Promise that resolves when deleted
+ */
+export const deleteSocketMessage = (messageId) => {
+  return new Promise((resolve, reject) => {
+    if (!socket || !socket.connected) {
+      reject(new Error('Socket is not connected'));
+      return;
+    }
+
+    socket.emit('delete_message', { messageId });
+    
+    const handleDeleted = (data) => {
+      if (data.messageId === messageId) {
+        socket.off('message_deleted', handleDeleted);
+        socket.off('error', handleError);
+        resolve(data);
+      }
+    };
+    
+    const handleError = (error) => {
+      socket.off('message_deleted', handleDeleted);
+      socket.off('error', handleError);
+      reject(error);
+    };
+    
+    socket.on('message_deleted', handleDeleted);
+    socket.on('error', handleError);
+    
+    // Set a timeout in case we don't get a response
+    setTimeout(() => {
+      socket.off('message_deleted', handleDeleted);
+      socket.off('error', handleError);
+      resolve({ deleted: true });  // Assume it deleted anyway after timeout
+    }, 5000);
+  });
+}; 

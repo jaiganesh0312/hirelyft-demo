@@ -1,152 +1,199 @@
-import axiosInstance from '@/utils/axiosInstance';
-
-const API_URL = '/complaints'; // Base path for complaint endpoints
+import axiosInstance from '../utils/axiosInstance';
+import io from 'socket.io-client';
 
 /**
- * Creates a new complaint.
- * @route POST /api/complaints
- * @param {object} complaintData - Data for the new complaint
- * @param {string} complaintData.subject - Subject/title of the complaint (required)
- * @param {string} complaintData.description - Detailed description of the issue (required)
- * @param {string} [complaintData.priority='Medium'] - Priority level ('Low', 'Medium', 'High')
- * @returns {Promise} Axios response promise with the created complaint data
- * @description Creates a new support complaint/ticket. Any authenticated user can create complaints.
- * The complaint will be automatically assigned a status of 'Open'.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
- * @response {object} complaint - The created complaint with user information
+ * Create a new complaint
+ * @param {Object} complaintData - Complaint data
+ * @param {string} complaintData.subject - Subject of the complaint
+ * @param {string} complaintData.description - Detailed description of the complaint
+ * @param {string} [complaintData.priority='Medium'] - Priority level (High, Medium, Low)
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if complaint was created successfully
+ *   - message: {string} - Success or error message
+ *   - complaint: {Object} - Created complaint with user information
  */
-export const createComplaint = (complaintData) => {
-    return axiosInstance.post(API_URL, complaintData);
+export const createComplaint = async (complaintData) => {
+  return axiosInstance.post('/complaints/create-complaint', complaintData);
 };
 
 /**
- * Fetches complaints.
- * @route GET /api/complaints
- * @param {object} params - Query parameters
- * @param {number} [params.page=1] - Page number for pagination
- * @param {number} [params.limit=10] - Number of results per page
- * @param {string} [params.status] - Filter by status ('Open', 'In Progress', 'Closed')
- * @param {string} [params.priority] - Filter by priority ('Low', 'Medium', 'High')
- * @param {boolean} [params.assigned] - For admins, whether to show only complaints assigned to them
- * @returns {Promise} Axios response promise with paginated list of complaints
- * @description For regular users, fetches their own complaints.
- * For admins, fetches all complaints or only those assigned to them (if 'assigned=true').
- * Includes unread message counts for each complaint.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {number} count - Total number of complaints matching filters
- * @response {Array} complaints - List of complaints with user info and unread message counts
- * @response {object} pagination - Pagination information
- * @response {number} pagination.currentPage - Current page number
- * @response {number} pagination.totalPages - Total number of pages
- * @response {boolean} pagination.hasNextPage - Whether there are more pages
- * @response {boolean} pagination.hasPreviousPage - Whether there are previous pages
- * @response {number} pagination.totalComplaints - Total number of complaints matching filters
+ * Get all complaints (filtered by user role)
+ * @param {Object} [options] - Filter and pagination options
+ * @param {number} [options.page=1] - Page number for pagination
+ * @param {number} [options.limit=10] - Number of complaints per page
+ * @param {string} [options.status] - Filter by status (Open, In Progress, Closed)
+ * @param {string} [options.priority] - Filter by priority (High, Medium, Low)
+ * @param {boolean} [options.assigned] - For admins, filter to show only complaints assigned to them
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - count: {number} - Total number of complaints matching criteria
+ *   - complaints: {Array<Object>} - List of complaints with unread message counts
+ *   - pagination: {Object} - Pagination details
  */
-export const getComplaints = (params) => {
-    return axiosInstance.get(API_URL, { params });
+export const getComplaints = async (options = {}) => {
+  const { page = 1, limit = 10, status, priority, assigned } = options;
+  
+  let url = `/complaints/get-all-complaints?page=${page}&limit=${limit}`;
+  
+  if (status) url += `&status=${status}`;
+  if (priority) url += `&priority=${priority}`;
+  if (assigned) url += `&assigned=${assigned}`;
+  
+  return axiosInstance.post(url);
 };
 
 /**
- * Fetches details for a single complaint.
- * @route GET /api/complaints/:id
- * @param {string|number} complaintId - The ID of the complaint
- * @returns {Promise} Axios response promise with complaint details and message history
- * @description Returns detailed information about a specific complaint, including all messages.
- * Access is restricted to the user who created the complaint and admin users.
- * Automatically marks unread messages as read when accessed.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {object} complaint - Complete complaint details including:
- * @response {object} complaint.user - User who created the complaint
- * @response {object} complaint.assignedAdmin - Admin assigned to the complaint (if any)
- * @response {object} complaint.closingUser - Admin who closed the complaint (if closed)
- * @response {Array} complaint.messages - All messages in the complaint thread
+ * Get a specific complaint by ID
+ * @param {string} complaintId - ID of the complaint to retrieve
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - complaint: {Object} - Complaint details with related users and messages
  */
-export const getComplaintById = (complaintId) => {
-    return axiosInstance.get(`${API_URL}/${complaintId}`);
+export const getComplaintById = async (complaintId) => {
+  return axiosInstance.post(`/complaints/get-by-id/${complaintId}`);
 };
 
 /**
- * Updates the status and/or assigned admin of a complaint (Admin only).
- * @route PUT /api/complaints/:id/status
- * @param {string|number} complaintId - The ID of the complaint
- * @param {object} updateData - Data for updating the complaint
- * @param {string} [updateData.status] - New status ('Open', 'In Progress', 'Closed')
- * @param {string|number|null} [updateData.assignedTo] - ID of admin to assign or null to unassign
- * @returns {Promise} Axios response promise with updated complaint details
- * @description Updates a complaint's status and/or assigns it to an admin. Admin-only function.
- * If status is set to 'Closed', the closing time and admin are automatically recorded.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
- * @response {object} complaint - Updated complaint with all related data
+ * Update complaint status (admin only)
+ * @param {string} complaintId - ID of the complaint to update
+ * @param {Object} statusData - Status update data
+ * @param {string} statusData.status - New status (Open, In Progress, Closed)
+ * @param {string} [statusData.assignedTo] - ID of admin user to assign the complaint to (null to unassign)
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if status was updated successfully
+ *   - message: {string} - Success or error message
+ *   - complaint: {Object} - Updated complaint with related users
  */
-export const updateComplaintStatus = (complaintId, updateData) => {
-    return axiosInstance.put(`${API_URL}/${complaintId}/status`, updateData);
+export const updateComplaintStatus = async (complaintId, statusData) => {
+  return axiosInstance.post(`/complaints/update-status/${complaintId}`, statusData);
 };
 
 /**
- * Closes a complaint (Admin only).
- * @route PUT /api/complaints/:id/close
- * @param {string|number} complaintId - The ID of the complaint
- * @returns {Promise} Axios response promise with updated complaint details
- * @description Marks a complaint as 'Closed'. Admin-only function.
- * Automatically records the closing time and admin who closed it.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
- * @response {object} complaint - Updated complaint with closing information
+ * Close a complaint (admin only)
+ * @param {string} complaintId - ID of the complaint to close
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if complaint was closed successfully
+ *   - message: {string} - Success or error message
+ *   - complaint: {Object} - Closed complaint with related users
  */
-export const closeComplaint = (complaintId) => {
-    return axiosInstance.put(`${API_URL}/${complaintId}/close`);
+export const closeComplaint = async (complaintId) => {
+  return axiosInstance.post(`/complaints/close-complaint/${complaintId}`);
 };
 
 /**
- * Sends a message in a complaint chat.
- * @route POST /api/complaints/:id/messages
- * @param {string|number} complaintId - The ID of the complaint
- * @param {object} messageData - Message data
- * @param {string} messageData.text - The message text
- * @returns {Promise} Axios response promise with the sent message details
- * @description Sends a new message in a complaint conversation. Access is restricted to the
- * complaint creator, assigned admin, or any admin. Increments unread count for recipients.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
- * @response {object} chatMessage - The created message with sender information
- * @response {object} chatMessage.sender - User who sent the message with id, name, email, avatarUrl
+ * Send a message in a complaint chat
+ * @param {string} complaintId - ID of the complaint
+ * @param {Object} messageData - Message data
+ * @param {string} messageData.text - Message text
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if message was sent successfully
+ *   - message: {string} - Success or error message
+ *   - chatMessage: {Object} - Created message with sender information
  */
-export const sendComplaintMessage = (complaintId, messageData) => {
-    return axiosInstance.post(`${API_URL}/${complaintId}/messages`, messageData);
+export const sendMessage = async (complaintId, messageData) => {
+  return axiosInstance.post('/complaints/send-message', {
+    id: complaintId,
+    ...messageData
+  });
 };
 
 /**
- * Deletes a message from a complaint chat (Admin or message owner).
- * @route DELETE /api/complaints/messages/:messageId
- * @param {string|number} messageId - The ID of the message
- * @returns {Promise} Axios response promise with success status
- * @description Soft-deletes a message from a complaint chat. Only the message 
- * sender or an admin can delete messages.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {string} message - Success message
+ * Delete a message (soft delete)
+ * @param {string} messageId - ID of the message to delete
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if message was deleted successfully
+ *   - message: {string} - Success or error message
  */
-export const deleteComplaintMessage = (messageId) => {
-    return axiosInstance.delete(`${API_URL}/messages/${messageId}`);
+export const deleteMessage = async (messageId) => {
+  return axiosInstance.post(`/complaints/delete-message/${messageId}`);
 };
 
 /**
- * Gets the unread message count across all user's complaints.
- * @route GET /api/complaints/messages/unread/count
- * @returns {Promise} Axios response promise with unread count data
- * @description Returns the total number of unread messages across all of the user's complaints.
- * For regular users, counts messages in their complaints. For admins, counts messages in complaints assigned to them.
- * @response {boolean} success - Indicates if the operation was successful
- * @response {number} unreadCount - Total number of unread messages
+ * Get unread message count for the current user
+ * @returns {Promise<Object>} Response containing:
+ *   - success: {boolean} - Indicates if the request was successful
+ *   - unreadCount: {number} - Number of unread messages
  */
-export const getUnreadMessageCount = () => {
-    return axiosInstance.get(`${API_URL}/messages/unread/count`);
+export const getUnreadMessageCount = async () => {
+  return axiosInstance.post('/complaints/get-unread-message-count');
+};
+
+/**
+ * Join a complaint chat room for real-time messaging
+ * @param {string} complaintId - ID of the complaint
+ * @param {Object} socket - Socket.io instance
+ * @returns {Promise<Object>} - Promise that resolves when joined
+ */
+export const joinComplaintChat = (complaintId, socket) => {
+  return new Promise((resolve, reject) => {
+    if (!socket || !socket.connected) {
+      reject(new Error('Socket is not connected'));
+      return;
+    }
+
+    socket.emit('join_complaint_chat', complaintId);
+    
+    const handleJoined = (data) => {
+      if (data.complaintId === complaintId) {
+        socket.off('joined_complaint_chat', handleJoined);
+        socket.off('error', handleError);
+        resolve(data);
+      }
+    };
+    
+    const handleError = (error) => {
+      socket.off('joined_complaint_chat', handleJoined);
+      socket.off('error', handleError);
+      reject(error);
+    };
+    
+    socket.on('joined_complaint_chat', handleJoined);
+    socket.on('error', handleError);
+  });
+};
+
+/**
+ * Send a real-time message via socket in a complaint chat
+ * @param {Object} messageData - Message data
+ * @param {string} messageData.complaintId - ID of the complaint
+ * @param {string} messageData.text - Message text
+ * @param {Object} socket - Socket.io instance
+ * @returns {Promise<Object>} - Promise that resolves with sent message
+ */
+export const sendSocketMessage = (messageData, socket) => {
+  return new Promise((resolve, reject) => {
+    if (!socket || !socket.connected) {
+      reject(new Error('Socket is not connected'));
+      return;
+    }
+
+    socket.emit('send_complaint_message', messageData);
+    
+    // Since we don't get a direct response for the specific message, 
+    // we'll set up a listener for the next new complaint message
+    const handleNewMessage = (message) => {
+      if (message.complaintId === messageData.complaintId && 
+          message.text === messageData.text) {
+        socket.off('new_complaint_message', handleNewMessage);
+        socket.off('error', handleError);
+        resolve(message);
+      }
+    };
+    
+    const handleError = (error) => {
+      socket.off('new_complaint_message', handleNewMessage);
+      socket.off('error', handleError);
+      reject(error);
+    };
+    
+    socket.on('new_complaint_message', handleNewMessage);
+    socket.on('error', handleError);
+    
+    // Set a timeout in case we don't get a response
+    setTimeout(() => {
+      socket.off('new_complaint_message', handleNewMessage);
+      socket.off('error', handleError);
+      resolve({ sent: true });  // Assume it sent anyway after timeout
+    }, 5000);
+  });
 }; 
-
-export const getComplaintsStats = () => {
-    return true;
-}
-export const getRecentComplaints = () => {
-    return true;
-}

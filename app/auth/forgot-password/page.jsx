@@ -4,7 +4,8 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, addToast } from "@heroui/react";
+import { Button, Input, Card, CardHeader, CardBody, CardFooter, addToast } from "@heroui/react";
+import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import { forgotPassword } from '@/services/authService';
 

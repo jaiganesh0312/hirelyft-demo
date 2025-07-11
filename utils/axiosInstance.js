@@ -1,8 +1,9 @@
 import axios from 'axios';
 
 // Replace with your actual backend API URL
-const API_BASE_URL = 'https://b594-122-172-87-239.ngrok-free.app';
+// const API_BASE_URL = ' https://e545-152-57-14-69.ngrok-free.app';
 // const API_BASE_URL = 'http://localhost:5000'
+const API_BASE_URL = 'https://my-hirelyft-backend-production.up.railway.app'
 
 const axiosInstance = axios.create({
   baseURL: API_BASE_URL,

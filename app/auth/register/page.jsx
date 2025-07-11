@@ -1,10 +1,11 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Button, Input, Card, CardHeader, CardBody, CardFooter, Link, Divider, RadioGroup, Radio, addToast } from "@heroui/react";
+import { Button, Input, Card, CardHeader, CardBody, CardFooter, Divider, RadioGroup, Radio, addToast, Select, SelectItem } from "@heroui/react";
+import Link from 'next/link';
 import { Icon } from '@iconify/react';
 import { registerUser } from '@/services/authService';
 import { useRouter } from 'next/navigation';
@@ -18,12 +19,15 @@ const registerSchema = z.object({
   confirmPassword: z.string(),
   role: z.enum(['jobseeker', 'employer'], { required_error: 'Please select a role' }),
   company_name: z.string().optional(),
+  date_of_birth: z.string().optional(),
+  gender: z.enum(['male', 'female', 'other', 'prefer_not_to_say'], { required_error: 'Please select a gender' }).optional(),
+  city: z.string().optional(),
+  area: z.string().optional(),
+  state: z.string().optional(),
+  pincode: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: "Passwords don't match",
   path: ["confirmPassword"], // path of error
-}).refine((data) => data.role !== 'employer' || (data.role === 'employer' && data.company_name && data.company_name.length > 0), {
-    message: "Company name is required for employers",
-    path: ["company_name"],
 });
 
 export default function RegisterPage() {
@@ -33,11 +37,12 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
+  const [avatarPreview, setAvatarPreview] = useState(null);
+  const [avatar, setAvatar] = useState(null);
+  const fileInputRef = useRef(null);
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
     reset,
   } = useForm({
@@ -49,33 +54,50 @@ export default function RegisterPage() {
       password: '',
       confirmPassword: '',
       role: 'jobseeker', // Default role
-      company_name: '',
+      avatar: undefined,
     },
   });
 
-  const selectedRole = watch('role');
-  console.log(selectedRole);
-
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
+
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setAvatar(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setAvatarPreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      setAvatar(null);
+      setAvatarPreview(null);
+    }
+  };
 
   const onSubmit = async (data) => {
     setError(null);
     setSuccessMessage(null);
     setLoading(true);
 
-    const registrationData = {
-        name: data.name,
-        email: data.email,
-        phone_number: data.phone_number,
-        password: data.password,
-        confirmPassword: data.confirmPassword,
-        role: data.role,
-        company_name: data.role === 'employer' ? data.company_name : undefined,
-    };
+    // Create FormData object to handle file upload
+    const formData = new FormData();
+    formData.append('name', data.name);
+    formData.append('email', data.email);
+    formData.append('phone_number', data.phone_number);
+    formData.append('password', data.password);
+    formData.append('confirmPassword', data.confirmPassword);
+    formData.append('role', data.role);
+    
+    // Append avatar file if it exists
+    if (avatar) {
+      formData.append('avatar', avatar);
+    }
+    console.log("formdata:", formData);
 
     try {
-      const response = await registerUser(registrationData);
+      const response = await registerUser(formData);
       setSuccessMessage(response.data.message || 'Registration successful! Please check your email to verify your account.');
       addToast({
         title: "Success!",
@@ -157,6 +179,40 @@ export default function RegisterPage() {
               isDisabled={loading}
             />
 
+            {/* Add the avatar upload field after phone number */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm">Profile Picture</label>
+              <div className="flex items-center gap-4">
+                {avatarPreview && (
+                  <div className="relative w-20 h-20 rounded-full overflow-hidden border-2 border-primary-300">
+                    <img src={avatarPreview} alt="Avatar preview" className="w-full h-full object-cover" />
+                  </div>
+                )}
+                <div className="flex-1">
+                  <input
+                    type="file"
+                    id="avatar"
+                    accept="image/*"
+                    className="hidden"
+                    ref={fileInputRef}
+                    // {...register('avatar')}
+                    onChange={handleAvatarChange}
+                    disabled={loading}
+                  />
+                  <Button 
+                    type="button" 
+                    color="secondary" 
+                    variant="flat"
+                    onPress={() => fileInputRef.current.click()}
+                    startContent={<Icon icon="mdi:image-outline" className="text-xl" />}
+                    isDisabled={loading}
+                  >
+                    Upload Profile Picture
+                  </Button>
+                </div>
+              </div>
+            </div>
+            
             <Input
               {...register('password')}
               label="Password"
@@ -205,6 +261,7 @@ export default function RegisterPage() {
               label="Select your role"
               orientation="horizontal"
               defaultValue="jobseeker"
+              isRequired
               {...register('role')}
               isInvalid={!!errors.role}
               errorMessage={errors.role?.message}
@@ -213,21 +270,6 @@ export default function RegisterPage() {
               <Radio value="jobseeker" {...register('role')}>Job Seeker</Radio>
               <Radio value="employer" {...register('role')}>Employer</Radio>
             </RadioGroup>
-
-            {selectedRole === 'employer' && (
-                 <Input
-                    {...register('company_name')}
-                    label="Company Name"
-                    placeholder="Enter your company name"
-                    variant="bordered"
-                    isInvalid={!!errors.company_name}
-                    errorMessage={errors.company_name?.message}
-                    startContent={<Icon icon="mdi:domain" className="text-xl text-default-400 pointer-events-none flex-shrink-0" />}
-                    isRequired
-                    isDisabled={loading}
-                />
-            )}
-
             <Button
               type="submit"
               color="primary"
@@ -243,7 +285,7 @@ export default function RegisterPage() {
           <CardFooter className="flex flex-col items-center pb-6">
             <p className="text-center text-sm text-gray-600 dark:text-gray-400">
               Already have an account?
-              <Link size="sm" href="/auth/login" className="ml-1" isDisabled={loading}>
+              <Link size="sm" href="/auth/login" className="ml-1">
                 Sign In
               </Link>
             </p>
